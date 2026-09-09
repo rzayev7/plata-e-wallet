@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/plata
+    username: postgres
+    password: change-me
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    com.plata: DEBUG
+    org.springframework.security: INFO

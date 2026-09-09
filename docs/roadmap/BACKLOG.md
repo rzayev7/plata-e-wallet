@@ -12,13 +12,15 @@ Take one story, work through its three or four subtasks, and you have shipped a 
 
 # Where the code is now
 
-- `common/` — `PasswordEncoder` bean, `BusinessException`, `GlobalExceptionHandler` (RFC 7807)
+Almost nothing. The Java code was deliberately wiped to be rewritten:
+
+- `PlataApplication` — the Spring Boot entry point
+- `common/config/SecurityConfig` — a `PasswordEncoder` bean and nothing else
 - `V1__create_customers_table.sql` — id, email, password_hash, role, status, first_name, last_name, phone_number, created_at
-- `PlataApplication`
 
-The `customer/` module was deliberately deleted, so registration and login are written from scratch. The `customers` table survives, so Story 1.1 needs no new migration.
+The `customers` table survives, so Story 1.1 needs no new migration.
 
-No tests of business logic. No security — `spring-boot-starter-security` is not a dependency yet.
+There is no exception handling, no error contract, no tests, and no security — `spring-boot-starter-security` is not a dependency yet. Mapping business failures onto HTTP responses is part of Story 1.1's REST API subtask, since it is needed the moment the first endpoint exists.
 
 ---
 
@@ -52,7 +54,7 @@ Built from scratch. The `customers` table already exists, so no new migration.
 *Done when:* a new customer can be created with a unique, normalized email and a hashed password, and every rule in BR-001 is proven by a test.
 
 - **Implement domain, persistence and use case** — create the `com.plata.customer` module: `Customer` aggregate with `Role` and `CustomerStatus`, email as a normalized value object, no public setters, a factory assigning `CUSTOMER`/`ACTIVE`, a repository over the existing table, and the registration service. The duplicate check should rely on the unique constraint, not only a prior read.
-- **Implement REST API** — request validation, 409 on duplicate email, response that can never leak the password hash.
+- **Implement REST API and the error contract** — `POST /auth/register`: request validation, 201 on success, 409 on a duplicate email, 400 on validation failure, and a response type structurally incapable of carrying the password hash. Includes the shared exception handling every later endpoint will reuse — a business-failure base type and one `@RestControllerAdvice` producing RFC 7807 problem details.
 - **Add tests** — unit tests for the use case, integration tests for the endpoint against real PostgreSQL.
 
 ## Story 1.2 — User login and session tokens

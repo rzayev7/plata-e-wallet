@@ -94,7 +94,7 @@ Architectural decisions are documented using Architecture Decision Records (ADRs
 ### Backend
 
 * Java 21
-* Spring Boot 3
+* Spring Boot
 * Maven
 
 ### Database
@@ -130,9 +130,9 @@ New technologies are introduced only when they solve an actual engineering probl
 ```text
 docs/
 ├── adr/
-├── api/
 ├── architecture/
-├── diagrams/
+├── domain/
+├── product/
 ├── roadmap/
 └── vision/
 

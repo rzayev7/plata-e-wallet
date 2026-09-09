@@ -106,4 +106,4 @@ Until then, the Modular Monolith remains the preferred architectural style for P
 # Related Decisions
 
 * ADR-0002 — Module Communication Boundaries
-* ADR-0003 — Wallet Ownership and Currency Model
+* ADR-0003 — Package Structure and Module Boundaries

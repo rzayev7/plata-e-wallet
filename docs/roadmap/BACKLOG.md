@@ -1,540 +1,796 @@
-# Plata Backlog
+# Plata Development Backlog
 
-**Status:** Draft
-**Created:** September 9, 2026
-**Source:** `PRODUCT_REQUIREMENTS.md`, `BUSINESS_RULES.md`, `ROADMAP.md`, `architecture.md`
+**Focus:** building the banking application. Java 21 + Spring Boot.
+**Scope:** 9 Epics · 18 Stories · 71 Implementation Tasks
 
-**Scale:** 15 Epics · 32 Stories · 152 Tasks
-
----
-
-# How to read this
-
-| Type | Meaning |
-|---|---|
-| **Epic** | A capability. Groups stories and tasks. |
-| **Story** | Something a customer, administrator or operator can do. |
-| **Task** | Technical work with no direct user-facing value. |
-
-**Size:** S = up to a day · M = a few days · L = about a week. Solo-developer pace.
-
-**Order matters.** Epics, and items inside them, are listed in build order. Anything listed before another item is either a hard dependency or the thing that makes the next item testable.
+Every task ends with code committed. Take task 1, code it, test it, commit it, take task 2.
 
 ---
 
-# Milestones
+# Where the code is right now
 
-| Milestone | Epics | Goal | Done when |
-|---|---|---|---|
-| **M0 — Foundation** | 1 | The project can be built, tested and debugged | CI green, logs readable, local stack starts with one command |
-| **M1 — MVP** | 2–9 | A customer can register, hold a wallet, receive money and send it | Two customers, one transfer, ledger balances, concurrency test passes |
-| **M2 — Version 1** | 10–13 | Everything `PRODUCT_REQUIREMENTS.md` calls Version 1 | Withdrawals, wallet lifecycle, audit, notifications, admin |
-| **M3 — Operable** | 14–15 | Safe to run somewhere real | Hardened, observable, documented, deployed |
+Already written and compiling:
 
-**The MVP is deliberately narrow.** Withdrawals, admin tools, notifications and audit logging are Version 1 but *not* MVP. Getting one transfer provably correct is worth more than ten half-finished features.
+- `common/config/SecurityConfig` — a `PasswordEncoder` bean and nothing else
+- `common/exception/` — `BusinessException` + `GlobalExceptionHandler` (RFC 7807)
+- `customer/` — `Customer` entity, repository, `CustomerService.register/login`, `AuthController` with `/auth/register` and `/auth/login`
+- `V1__create_customers_table.sql`
 
----
+Not written yet: **any test of the business logic**, and **any security** — every endpoint is currently open.
 
-# EPIC-1 — Engineering Foundation
-
-**Milestone:** M0 · **Covers:** `ROADMAP.md` Phase 0
-
-No stories — none of this is visible to a user. All of it makes everything after it cheaper.
-
-| ID | Type | Title | Size | Status / Depends |
-|---|---|---|---|---|
-| FND-T1 | Task | Git repository and initial commit | S | Done |
-| FND-T2 | Task | CI pipeline running `mvn verify` on push and pull request | S | Done |
-| FND-T3 | Task | Architecture document and ADR-0004 package structure | M | Done |
-| FND-T4 | Task | Logback JSON encoder configuration | S | — |
-| FND-T5 | Task | Correlation ID filter: accept `X-Correlation-Id` or generate one | M | FND-T4 |
-| FND-T6 | Task | Put the correlation ID in the MDC and in every log line | S | FND-T5 |
-| FND-T7 | Task | Return the correlation ID in the response header | S | FND-T5 |
-| FND-T8 | Task | Confirm no password, token or hash reaches the logs | S | FND-T6 |
-| FND-T9 | Task | `docker-compose.yml` with PostgreSQL for local development | S | — |
-| FND-T10 | Task | Coding standards document | S | — |
-| FND-T11 | Task | Pin the PostgreSQL image version in `TestcontainersConfiguration` | S | — |
-| FND-T12 | Task | Base integration test class with shared Testcontainers setup | M | FND-T11 |
-| FND-T13 | Task | ArchUnit: no module touches another module's `repository` or `entity` | S | EPIC-4 |
-| FND-T14 | Task | ArchUnit: no field injection, no cycles between modules | S | FND-T13 |
-
-**FND-T5.** `ROADMAP.md` puts logging in Phase 0 on purpose. Debugging a failed transfer without a correlation ID is where `System.out.println` habits are born.
-
-**FND-T9.** `docker-compose.yml` is currently an empty file. Done when `docker compose up -d` followed by `./mvnw spring-boot:run` works on a clean machine.
-
-**FND-T11.** Currently `postgres:latest`. A test suite that passes today and fails next month because the image moved is not a test suite.
-
-**FND-T13.** Blocked until a second module exists — a boundary rule over one module tests nothing.
+The order below starts from exactly that state.
 
 ---
 
-# EPIC-2 — Authentication and Customer Account
+# Build order
 
-**Milestone:** M1 · **Covers:** §3, §4 · BR-001, BR-002, BR-017
+| # | Epic | Why here |
+|---|---|---|
+| 1 | Money | Zero dependencies, pure Java. Everything financial needs it first. |
+| 2 | Authentication and Authorization | Nothing customer-scoped can exist until the app knows who is calling. |
+| 3 | Customer Profile | Small; finishes the customer domain. |
+| 4 | Accounts | Needs Money and Auth. |
+| 5 | Transactions and Ledger | Needs Accounts. The financial core. |
+| 6 | Deposits | First real money movement. Simplest one. |
+| 7 | Withdrawals | Same pattern, plus a balance check. |
+| 8 | Transfers | The point of the product. |
+| 9 | Transaction History | Needs something to show. |
 
-## Stories
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| AUTH-S1 | Register with email and password | M | Done |
-| AUTH-S2 | Log in and receive an access and refresh token | S | AUTH-T8 |
-| AUTH-S3 | Refresh my access token without logging in again | S | AUTH-T9 |
-| AUTH-S4 | Log out, invalidating my refresh token | S | AUTH-T10 |
-| AUTH-S5 | Log out from every device | S | AUTH-T10 |
-| AUTH-S6 | Change my password | S | AUTH-T14 |
-| AUTH-S7 | View my profile and account creation date | S | AUTH-T12 |
-| AUTH-S8 | Edit my first name, last name and phone number | S | AUTH-S7 |
-
-## Tasks
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| AUTH-T1 | Add `spring-boot-starter-security` and a `SecurityFilterChain` | M | — |
-| AUTH-T2 | Declare which paths are public and which require authentication | S | AUTH-T1 |
-| AUTH-T3 | `JwtTokenService`: issue signed access tokens | M | AUTH-T1 |
-| AUTH-T4 | JWT authentication filter populating the security context | M | AUTH-T3 |
-| AUTH-T5 | Reject expired, tampered and absent tokens with 401 | S | AUTH-T4 |
-| AUTH-T6 | Token expiry read from configuration, not a constant | S | AUTH-T3 |
-| AUTH-T7 | `refresh_tokens` migration: hashed token, expiry, revoked flag | S | — |
-| AUTH-T8 | `RefreshToken` entity and repository | S | AUTH-T7 |
-| AUTH-T9 | Issue a refresh token and rotate it on every use | M | AUTH-T8 |
-| AUTH-T10 | Revoke a refresh token, individually and for a whole customer | M | AUTH-T9 |
-| AUTH-T11 | Map `Role` onto Spring authorities | S | AUTH-T4 |
-| AUTH-T12 | `CurrentCustomer` resolver for the authenticated customer id | S | AUTH-T4 |
-| AUTH-T13 | Block authentication for suspended customers | S | AUTH-T4 |
-| AUTH-T14 | Password change: verify current password, revoke all refresh tokens | M | AUTH-T10 |
-| AUTH-T15 | Profile endpoints and DTOs | S | AUTH-T12 |
-| AUTH-T16 | Unit tests for `CustomerService` | M | — |
-| AUTH-T17 | Integration test: duplicate email rejected | S | AUTH-T16 |
-| AUTH-T18 | Integration test: unknown email and wrong password give identical errors | S | AUTH-T16 |
-| AUTH-T19 | Integration test: full login, refresh, logout cycle | M | AUTH-S4 |
-
-**AUTH-T1.** `spring-boot-starter-security` is not currently a dependency, so **every endpoint is open right now**. Adding it locks everything by default, which is why AUTH-T2 belongs in the same slice.
-
-**AUTH-T7.** Store a hash of the refresh token, never the token itself. A leaked database should not be a leaked session.
-
-**AUTH-T18.** BR-002 requires that a failed login never reveals whether the email exists. Otherwise the login form becomes an account-enumeration tool.
+**MVP is done at the end of Epic 9:** two customers register, log in, open accounts, deposit, transfer, and see their history — with the ledger balancing and concurrent transfers unable to overdraw.
 
 ---
 
-# EPIC-3 — Money
+# EPIC 1 — Money
 
-**Milestone:** M1 · **Covers:** BR-004a · `architecture.md` "Financial Correctness"
+### Story 1.1 — My balance is always exact, and the system can never confuse two currencies
 
-No stories. This epic exists so that nothing downstream invents its own way of representing an amount.
-
-| ID | Type | Title | Size | Depends |
-|---|---|---|---|---|
-| MON-T1 | Task | `Currency` type | S | — |
-| MON-T2 | Task | `Money` value object: `long` minor units plus currency | S | MON-T1 |
-| MON-T3 | Task | Arithmetic, comparison, and a hard failure on mixed currencies | S | MON-T2 |
-| MON-T4 | Task | JPA mapping for `Money` | S | MON-T2 |
-| MON-T5 | Task | JSON representation of `Money` for the API | S | MON-T2 |
-| MON-T6 | Task | Unit tests covering every operation and the mixed-currency failure | S | MON-T3 |
-
-**Do this epic before anything stores a balance.** Changing the money type later means rewriting every table, every service and every test that touches an amount. `double` is never acceptable here, and a bare `BigDecimal` carries no currency.
+New package: `com.plata.common.money`
 
 ---
 
-# EPIC-4 — Wallets
+**MON-1 · Create the `Currency` enum**
+Depends on: nothing. **This is task #1.**
 
-**Milestone:** M1 · **Covers:** §5.1, §5.2 · BR-003, BR-004, BR-004a
+Write `common/money/Currency.java`: an enum with the ISO code and the number of minor units.
+Version 1 is single-currency (BR-004a), so it has one value — `AZN(2)` or whatever your platform currency is.
 
-## Stories
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| WAL-S1 | Create a wallet | S | WAL-T4 |
-| WAL-S2 | List my wallets | S | WAL-S1 |
-| WAL-S3 | View one of my wallets | S | WAL-S1 |
-
-## Tasks
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| WAL-T1 | `wallets` table migration | S | MON-T4 |
-| WAL-T2 | `Wallet` entity: owner, currency, status, display name, `@Version` | M | WAL-T1 |
-| WAL-T3 | `WalletRepository` | S | WAL-T2 |
-| WAL-T4 | `WalletService.create` — zero balance, ACTIVE status | M | WAL-T3 |
-| WAL-T5 | Wallet request and response DTOs | S | WAL-T4 |
-| WAL-T6 | Wallet controller endpoints | S | WAL-T5 |
-| WAL-T7 | Ownership check applied to every wallet operation | M | AUTH-T12 |
-| WAL-T8 | Another customer's wallet returns 404, not 403 | S | WAL-T7 |
-| WAL-T9 | Unit tests for `WalletService` | M | WAL-T4 |
-| WAL-T10 | Integration tests including cross-customer access attempts | M | WAL-T8 |
-
-**WAL-T2.** Balance is **not** a column. It is derived from the ledger (EPIC-5). A stored, independently editable balance is how money quietly appears and disappears.
-
-**WAL-T7.** BR-003. This is the most commonly exploited bug in wallet applications: an endpoint that trusts the wallet id in the URL and never checks who owns it. Every endpoint gets a test that proves it.
-
-**WAL-T8.** 403 confirms the wallet exists, which leaks information. 404 does not.
+*Acceptance:*
+- `Currency.AZN.minorUnits()` returns `2`
+- `Currency.AZN.code()` returns `"AZN"`
 
 ---
 
-# EPIC-5 — Ledger
+**MON-2 · Create the `Money` value object**
+Depends on: MON-1
 
-**Milestone:** M1 · **Covers:** §10 · BR-010, BR-011, BR-018
+Write `common/money/Money.java`. Amount is a `long` in **minor units** — never `double`, never a bare `BigDecimal`.
 
-The heart of the system. Everything financial writes through here and nowhere else.
+Factories: `Money.of(long minorUnits, Currency)`, `Money.ofMajor(BigDecimal, Currency)`, `Money.zero(Currency)`.
 
-## Stories
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| LED-S1 | Administrator reconstructs a wallet balance from ledger entries | M | LED-T8 |
-
-## Tasks
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| LED-T1 | `ledger_accounts` migration | S | WAL-T1 |
-| LED-T2 | `ledger_transactions` migration | S | LED-T1 |
-| LED-T3 | `ledger_entries` migration: direction, amount, account, transaction | M | LED-T2 |
-| LED-T4 | `LedgerAccount` entity | S | LED-T1 |
-| LED-T5 | `LedgerEntry` entity — immutable, no setters | S | LED-T3 |
-| LED-T6 | `LedgerTransaction` aggregate whose factory enforces balance | L | LED-T5 |
-| LED-T7 | `LedgerService.post()` as the only write path into the ledger | M | LED-T6 |
-| LED-T8 | Balance query derived from entries | M | LED-T7 |
-| LED-T9 | Platform account funding deposits and receiving withdrawals | M | LED-T4 |
-| LED-T10 | Revoke UPDATE and DELETE on the ledger tables | S | LED-T3 |
-| LED-T11 | Indexes for balance and entry lookups | S | LED-T8 |
-| LED-T12 | Unit test: an unbalanced transaction cannot be constructed | M | LED-T6 |
-| LED-T13 | Integration test: derived balance equals the sum of every operation | M | LED-T8 |
-
-**LED-T6.** Total debits must equal total credits, checked when the object is built — not in a service method that a future caller can bypass. This single invariant is what BR-010 rests on.
-
-**LED-T9.** Double entry needs both sides. A deposit is not "balance goes up"; it is a debit on the platform account and a credit on the wallet account.
-
-**LED-T10.** BR-011 says ledger entries are immutable and never deleted. Enforce it in PostgreSQL, not only in Java. "We never update that table" is a habit; a revoked grant is a guarantee.
+*Acceptance:*
+- `Money.of(1050, AZN)` represents 10.50
+- `Money.ofMajor(new BigDecimal("10.50"), AZN).amount() == 1050`
+- `Money.ofMajor(new BigDecimal("10.505"), AZN)` throws — more precision than the currency has
+- a null currency throws
 
 ---
 
-# EPIC-6 — Deposits
+**MON-3 · Arithmetic and comparison**
+Depends on: MON-2
 
-**Milestone:** M1 · **Covers:** §6 · BR-007. Simulated — no payment gateway (§17).
+Add `plus`, `minus`, `negate`, `isZero`, `isNegative`, `isPositive`, `isGreaterThan`, `isLessThan`.
 
-## Stories
+Negative `Money` is allowed at the type level — a ledger needs to express both directions. Business rules reject negative *amounts*; the type does not.
 
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| DEP-S1 | Deposit money into my wallet | M | DEP-T4 |
-
-## Tasks
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| DEP-T1 | `idempotency_keys` migration | S | — |
-| DEP-T2 | Idempotency interceptor reading an `Idempotency-Key` header | M | DEP-T1 |
-| DEP-T3 | A repeated key returns the original response instead of acting again | M | DEP-T2 |
-| DEP-T4 | `DepositService` with BR-007 validation | M | LED-T7 |
-| DEP-T5 | Deposit posts balanced ledger entries in one database transaction | M | DEP-T4 |
-| DEP-T6 | Deposit endpoint and DTOs | S | DEP-T5 |
-| DEP-T7 | Unit tests for deposit rules | S | DEP-T4 |
-| DEP-T8 | Integration test: the same key sent twice deposits once | M | DEP-T3 |
-
-**DEP-T2.** Built here, reused by transfers. Retrofitting idempotency onto a live money-moving endpoint is far harder than building it in, and it is the only thing standing between a client timeout-and-retry and a double payment.
+*Acceptance:*
+- adding two different currencies throws `CurrencyMismatchException`
+- `Money.of(100, AZN).minus(Money.of(150, AZN))` gives `-50`
+- `Money` is immutable — `plus` returns a new instance
 
 ---
 
-# EPIC-7 — Transfers
+**MON-4 · Display and conversion**
+Depends on: MON-2
 
-**Milestone:** M1 · **Covers:** §8 · BR-009, BR-010
+Add `toMajorUnits()` returning `BigDecimal`, and `toString()`.
 
-The reason the project exists.
-
-## Stories
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| TRF-S1 | Send money to another wallet | L | TRF-T8 |
-| TRF-S2 | Attach a note to a transfer for the recipient | S | TRF-S1 |
-
-## Tasks
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| TRF-T1 | `transfers` migration | S | LED-T3 |
-| TRF-T2 | `Transfer` entity | S | TRF-T1 |
-| TRF-T3 | `TransferService` orchestration | L | LED-T7 |
-| TRF-T4 | Validate both wallets exist, differ, and the amount is positive | M | TRF-T3 |
-| TRF-T5 | Validate sender is ACTIVE and receiver is ACTIVE or FROZEN | M | TRF-T4 |
-| TRF-T6 | Sufficient-funds check before any ledger entry is written | M | TRF-T5 |
-| TRF-T7 | Optimistic locking with a bounded retry on conflict | M | TRF-T6 |
-| TRF-T8 | One database transaction covering ledger entries and transfer record | M | TRF-T7 |
-| TRF-T9 | Idempotency applied to the transfer endpoint | S | DEP-T3 |
-| TRF-T10 | Transfer endpoint and DTOs | S | TRF-T8 |
-| TRF-T11 | Unit tests, one per BR-009 rule | L | TRF-T6 |
-| TRF-T12 | Integration test for the happy path | M | TRF-T10 |
-| TRF-T13 | Concurrency test: parallel transfers cannot overdraw a wallet | L | TRF-T7 |
-| TRF-T14 | Test: a rejected transfer leaves no ledger entries at all | M | TRF-T6 |
-
-**TRF-T5.** BR-005 is deliberate and easy to get wrong: a FROZEN wallet *can* receive. Freezing is containment against outgoing misuse, not a full lock.
-
-**TRF-T13.** Fire N simultaneous transfers from a wallet that can fund only one. Exactly one succeeds, the balance never goes negative, the ledger still balances. **This test is the point of the whole project.** If it passes reliably, the hard part is done.
+*Acceptance:*
+- `Money.of(1050, AZN).toMajorUnits()` equals `new BigDecimal("10.50")`
+- `Money.of(5, AZN).toMajorUnits()` equals `new BigDecimal("0.05")`
+- `toString()` gives `"10.50 AZN"`
 
 ---
 
-# EPIC-8 — Transaction History
+**MON-5 · Unit tests for `Money`**
+Depends on: MON-3, MON-4
 
-**Milestone:** M1 · **Covers:** §9 · BR-012
+Write `MoneyTest`. Cover zero, positive, negative, addition, subtraction, currency mismatch, both conversions, equality and `hashCode`.
 
-## Stories
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| HIS-S1 | View my transaction history, newest first | M | HIS-T2 |
-| HIS-S2 | Filter my history by wallet, type and date range | S | HIS-S1 |
-| HIS-S3 | View the full detail of one transaction | S | HIS-S1 |
-
-## Tasks
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| HIS-T1 | History read model over ledger and transfer records | M | TRF-T8 |
-| HIS-T2 | Pagination on every history endpoint | M | HIS-T1 |
-| HIS-T3 | Filter parameters and their validation | S | HIS-T2 |
-| HIS-T4 | History endpoints and DTOs | S | HIS-T3 |
-| HIS-T5 | Ownership filtering — a customer sees only their own transactions | M | WAL-T7 |
-| HIS-T6 | Indexes supporting the history queries | S | HIS-T3 |
-| HIS-T7 | Integration tests including cross-customer isolation | M | HIS-T5 |
-
-**HIS-T2.** Pagination from the first commit, not once it is slow. An unbounded list endpoint over a financial table is a problem you discover in production.
+*Acceptance:* every method on `Money` has at least one test; `./mvnw test` is green.
 
 ---
 
-# EPIC-9 — Withdrawals
+**MON-6 · Make `Money` persistable**
+Depends on: MON-2
 
-**Milestone:** M1 · **Covers:** §7 · BR-008. Simulated, like deposits.
+Make `Money` an `@Embeddable` so an entity can hold it as two columns (`..._amount BIGINT`, `..._currency VARCHAR(3)`).
 
-## Stories
+If a record gives trouble as an embeddable, use a final class with a `protected` no-arg constructor — the shape matters less than the round trip.
 
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| WDR-S1 | Withdraw money from my wallet | M | WDR-T1 |
-
-## Tasks
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| WDR-T1 | `WithdrawalService` with BR-008 validation | M | LED-T7 |
-| WDR-T2 | Reject a withdrawal that would make the balance negative | S | WDR-T1 |
-| WDR-T3 | A FROZEN wallet cannot withdraw | S | WDR-T1 |
-| WDR-T4 | Withdrawal posts balanced ledger entries atomically | M | WDR-T1 |
-| WDR-T5 | Withdrawal endpoint and DTOs | S | WDR-T4 |
-| WDR-T6 | Unit and integration tests | M | WDR-T5 |
+*Acceptance:* an entity with a `Money` field saves and loads unchanged, verified against real PostgreSQL.
 
 ---
 
-# EPIC-10 — Wallet Lifecycle
+**MON-7 · JSON representation for the API**
+Depends on: MON-2
 
-**Milestone:** M2 · **Covers:** §5.3, §5.4, §5.5 · BR-005, BR-006, BR-006a, BR-015
+Serialize `Money` as `{"amount": "10.50", "currency": "AZN"}` — major units, **as a string**, never a JSON float.
 
-## Stories
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| WLC-S1 | Rename my wallet | S | WLC-T1 |
-| WLC-S2 | Close a wallet that has a zero balance | M | WLC-T3 |
-
-## Tasks
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| WLC-T1 | Rename endpoint and validation | S | WAL-T6 |
-| WLC-T2 | Wallet status state machine in a single place | M | WAL-T2 |
-| WLC-T3 | Closure requires zero balance and no pending operations | M | WLC-T2 |
-| WLC-T4 | Closure is permanent — a CLOSED wallet cannot be reopened | S | WLC-T3 |
-| WLC-T5 | FROZEN blocks sending and withdrawing, allows receiving | M | WLC-T2 |
-| WLC-T6 | CLOSED blocks every financial operation, incoming and outgoing | S | WLC-T2 |
-| WLC-T7 | Unit tests covering every status transition | M | WLC-T2 |
-| WLC-T8 | Integration tests for closure and frozen-wallet behaviour | M | WLC-T6 |
-
-**WLC-T2.** One place decides what each status permits. Scattering these checks across services is how a frozen wallet ends up able to send money through one endpoint but not another.
+*Acceptance:*
+- an endpoint returning `Money.of(1050, AZN)` produces exactly that JSON
+- the same JSON deserializes back to the same `Money`
 
 ---
 
-# EPIC-11 — Audit Logging
+# EPIC 2 — Authentication and Authorization
 
-**Milestone:** M2 · **Covers:** §14 · BR-016
+### Story 2.1 — I can register, and the rules are actually tested
 
-## Stories
+**AUTH-1 · Unit tests for `CustomerService.register`**
+Depends on: nothing
 
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| AUD-S1 | Administrator reviews the audit log | M | AUD-T9 |
+Write `CustomerServiceTest` with a mocked repository and encoder.
 
-## Tasks
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| AUD-T1 | `audit_log` migration with timestamp and actor | S | — |
-| AUD-T2 | `AuditEvent` entity — immutable | S | AUD-T1 |
-| AUD-T3 | `AuditService` | M | AUD-T2 |
-| AUD-T4 | Record registration, login, logout and password change | M | AUD-T3 |
-| AUD-T5 | Record wallet creation, closure, freeze and unfreeze | M | AUD-T3 |
-| AUD-T6 | Record deposits, withdrawals and transfers | M | AUD-T3 |
-| AUD-T7 | Record every administrative action | M | AUD-T3 |
-| AUD-T8 | Revoke UPDATE and DELETE on `audit_log` | S | AUD-T1 |
-| AUD-T9 | Audit query endpoint with filters and pagination | M | AUD-T7 |
-| AUD-T10 | Integration tests proving each BR-016 event is recorded | M | AUD-T9 |
-
-**AUD-T4 to AUD-T7.** BR-016 lists exactly which events must be audited. Split across four tickets because they land alongside four different epics, not because the code differs.
+*Acceptance:*
+- duplicate email throws `EmailAlreadyExistsException`
+- the stored password is a hash, not the raw password
+- `"Bob@Example.COM"` is stored as `"bob@example.com"`
+- a new customer gets role `CUSTOMER` and status `ACTIVE`
 
 ---
 
-# EPIC-12 — Notifications
+**AUTH-2 · Integration test for `POST /auth/register`**
+Depends on: AUTH-1
 
-**Milestone:** M2 · **Covers:** §11 · BR-013. In-app only in Version 1; real channels are Phase 8.
+Against real PostgreSQL via the existing Testcontainers setup.
 
-## Stories
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| NOT-S1 | View my notifications | S | NOT-T7 |
-| NOT-S2 | Mark a notification as read | S | NOT-S1 |
-
-## Tasks
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| NOT-T1 | `notifications` migration | S | — |
-| NOT-T2 | `Notification` entity and repository | S | NOT-T1 |
-| NOT-T3 | Domain events published from money operations | M | TRF-T8 |
-| NOT-T4 | Listeners turning those events into notifications | M | NOT-T3 |
-| NOT-T5 | Cover every event BR-013 lists | M | NOT-T4 |
-| NOT-T6 | A notification failure must never roll back a financial operation | M | NOT-T4 |
-| NOT-T7 | Notification endpoints and DTOs | S | NOT-T5 |
-| NOT-T8 | Integration test: notification throws, transfer still commits | M | NOT-T6 |
-
-**NOT-T3.** Spring's `ApplicationEventPublisher`, in process. ADR-0004 defers Kafka until a second consumer actually exists.
-
-**NOT-T6.** BR-013 is explicit about this, and it is easy to get backwards: an event listener inside the transfer transaction can roll the transfer back when it fails.
+*Acceptance:*
+- valid request → 201, body has no `passwordHash` field
+- duplicate email → 409
+- malformed email → 400
+- password shorter than 8 characters → 400
 
 ---
 
-# EPIC-13 — Administration
+### Story 2.2 — I can log in and receive a token
 
-**Milestone:** M2 · **Covers:** §13 · BR-014, BR-015
+**AUTH-3 · Add Spring Security and a filter chain**
+Depends on: nothing
 
-## Stories
+Add `spring-boot-starter-security`. Extend `SecurityConfig` with a `SecurityFilterChain`: stateless sessions, CSRF disabled, `permitAll` on `/auth/register` and `/auth/login`, everything else authenticated.
 
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| ADM-S1 | Administrator lists and searches customers | M | ADM-T3 |
-| ADM-S2 | Administrator views any wallet | S | ADM-T4 |
-| ADM-S3 | Administrator freezes a wallet | M | ADM-T5 |
-| ADM-S4 | Administrator unfreezes a wallet | S | ADM-T5 |
-| ADM-S5 | Administrator suspends a customer | M | ADM-T6 |
-| ADM-S6 | Administrator reactivates a customer | S | ADM-T6 |
-| ADM-S7 | Administrator views transfers, deposits and withdrawals | M | ADM-T7 |
-
-## Tasks
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| ADM-T1 | Administration module and routing under `/admin` | S | AUTH-T11 |
-| ADM-T2 | ADMIN role required on every administration endpoint | M | ADM-T1 |
-| ADM-T3 | Customer search query with pagination | M | ADM-T2 |
-| ADM-T4 | Administrative wallet view bypassing ownership rules | M | WAL-T7 |
-| ADM-T5 | Freeze and unfreeze service | M | WLC-T2 |
-| ADM-T6 | Suspend and reactivate, revoking refresh tokens on suspend | M | AUTH-T10 |
-| ADM-T7 | Administrative transaction views | M | HIS-T1 |
-| ADM-T8 | Every administrative action writes an audit record | M | AUD-T7 |
-| ADM-T9 | Authorization test: a CUSTOMER token gets 403 on every endpoint | M | ADM-T2 |
-| ADM-T10 | Integration tests for each administrative operation | L | ADM-T8 |
-
-**ADM-T9.** An admin API a normal customer can reach is worse than no admin API. One test per endpoint, no exceptions.
-
-**Not in Version 1:** administrators cannot reverse a completed transfer (BR-010). A correction is a new compensating transfer, never a mutation of the original entries.
+*Acceptance:*
+- `POST /auth/register` still returns 201
+- any other endpoint without credentials returns 401, not 200
+- no generated password appears in the startup log
 
 ---
 
-# EPIC-14 — Security Hardening
+**AUTH-4 · `JwtTokenService` issuing access tokens**
+Depends on: AUTH-3
 
-**Milestone:** M3 · **Covers:** §12 · BR-017
+`jjwt` is already in `pom.xml`; `jwt.secret` and `jwt.access-token-expiration-minutes` are already in `application.yml`. Bind them with `@ConfigurationProperties`.
 
-No stories. All of it is invisible until it is missing.
+Claims: `sub` = customer id, plus email and role. Sign HS256.
 
-| ID | Type | Title | Size | Depends |
-|---|---|---|---|---|
-| SEC-T1 | Task | Rate limit the login and register endpoints | M | AUTH-T1 |
-| SEC-T2 | Task | Security response headers | S | AUTH-T1 |
-| SEC-T3 | Task | CORS policy | S | AUTH-T1 |
-| SEC-T4 | Task | Move the JWT secret into real secret configuration | S | — |
-| SEC-T5 | Task | Dependency vulnerability scanning in CI | S | FND-T2 |
-| SEC-T6 | Task | Request body size limits | S | — |
-| SEC-T7 | Task | Confirm no secret, token or hash reaches the logs | S | FND-T8 |
-| SEC-T8 | Task | Security-focused integration tests | M | SEC-T1 |
-
-**SEC-T1.** §12 files rate limiting under "future". For anything reachable from the internet it is not: without it the login endpoint is an unlimited password-guessing service.
-
-**SEC-T4.** `.env` holding `JWT_SECRET` is fine locally and is git-ignored. Anywhere real it belongs in the platform's secret store — a leaked signing key lets anyone mint a token for any customer.
+*Acceptance:*
+- an issued token parses back with the right `sub`
+- expiry equals now plus the configured minutes — read from config, not a constant
+- startup fails loudly if `jwt.secret` is missing
 
 ---
 
-# EPIC-15 — Observability, API and Delivery
+**AUTH-5 · `JwtAuthenticationFilter`**
+Depends on: AUTH-4
 
-**Milestone:** M3 · **Covers:** §16 · `ROADMAP.md` Phase 5
+A `OncePerRequestFilter` reading `Authorization: Bearer <token>`, validating it, and populating the `SecurityContext`.
 
-## Stories
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| OPS-S1 | Operator checks whether the service is healthy and ready | S | OPS-T1 |
-
-## Tasks
-
-| ID | Title | Size | Depends |
-|---|---|---|---|
-| OPS-T1 | Actuator health and readiness probes | S | — |
-| OPS-T2 | Micrometer metrics and a Prometheus endpoint | M | OPS-T1 |
-| OPS-T3 | Business metrics: transfer volume, failure rate, latency | M | OPS-T2 |
-| OPS-T4 | OpenTelemetry tracing | M | OPS-T2 |
-| OPS-T5 | OpenAPI specification via springdoc | S | — |
-| OPS-T6 | Version the API under `/api/v1` | S | — |
-| OPS-T7 | Populate `docs/api/` | S | OPS-T5 |
-| OPS-T8 | Multi-stage Dockerfile | M | — |
-| OPS-T9 | Full-stack Docker Compose: application and database | S | OPS-T8 |
-| OPS-T10 | Deploy to one real environment | L | OPS-T9 |
-| OPS-T11 | Database backup and restore runbook | M | OPS-T10 |
-
-**OPS-T4** is genuinely optional while this is a single process. Do it to learn tracing; skip it to ship.
-
-**OPS-T6** is cheap now and expensive later. Do it before anything else consumes the API.
-
-**OPS-T8.** `Dockerfile` is currently an empty file.
-
-**OPS-T10** matters more than it looks. A project that has never been deployed has never been finished.
+*Acceptance:*
+- valid token → request is authenticated
+- expired token → 401
+- token with a tampered signature → 401
+- no header on a protected path → 401
 
 ---
 
-# Deliberately not created
+**AUTH-6 · `refresh_tokens` migration**
+Depends on: nothing
 
-These appear in `ROADMAP.md` or the vision document. No tickets, on purpose — none of them solves a problem this project currently has.
+`V2__create_refresh_tokens_table.sql`: id, customer_id FK, `token_hash` UNIQUE, expires_at, revoked_at NULL, created_at.
 
-| Not created | Why |
-|---|---|
-| Kafka and event-driven infrastructure | Spring application events cover Version 1. Revisit when a second consumer exists. |
-| Redis caching | Nothing has been measured as slow. Caching a ledger before measuring it is how balances go stale. |
-| Kubernetes, Terraform | One process, one database. Compose is enough. |
-| Extracting modules into services | ADR-0001 already rejects this until there is a real reason. |
-| Multi-currency and FX | BR-004a defers it. The currency column exists from day one for when it matters. |
-| Merchant wallets, QR, gateways, cards | §17 puts them outside Version 1. |
-| Fraud detection, AML, risk scoring | Needs production traffic to be anything but theatre. |
-| Two-factor authentication | §12 marks it future. SEC-T1 protects more, for less work. |
-| Email, push and SMS delivery | BR-013 says Version 1 notifications are in-app. |
-| CSV and PDF statement export | §9 marks it future. |
-
-If one becomes necessary, it gets an ADR first, then tickets.
+*Acceptance:* migration applies cleanly; there is no column that could hold a raw token.
 
 ---
 
-# Documentation consistency
+**AUTH-7 · `RefreshToken` entity and repository**
+Depends on: AUTH-6
 
-Two inconsistencies were found while writing this backlog. Both are now fixed:
+*Acceptance:* `findByTokenHash` returns the token; the entity has no public setters.
 
-* `BUSINESS_RULES.md` §17 referenced an ADR on wallet ownership and currency that had never
-  been written. It now exists as `ADR-0003`, and the package-structure decision moved to
-  `ADR-0004` so the numbering matches the order the decisions were made.
-* `PRODUCT_REQUIREMENTS.md` §18 listed ten open questions that `BUSINESS_RULES.md` had
-  already answered. It now records the answers and points at the rule governing each.
+---
+
+**AUTH-8 · `RefreshTokenService` — issue, validate, rotate, revoke**
+Depends on: AUTH-7
+
+Generate 256 bits of randomness, hand the raw value to the client **once**, store only its SHA-256 hash.
+
+*Acceptance:*
+- the raw token never reaches the database
+- using a refresh token rotates it — the old one stops working
+- a revoked token is rejected
+- an expired token is rejected
+
+---
+
+**AUTH-9 · `POST /auth/login` returns access and refresh tokens**
+Depends on: AUTH-5, AUTH-8
+
+Replace the current `CustomerResponse` return with `{accessToken, refreshToken, expiresIn, customer}`.
+
+*Acceptance:*
+- valid credentials → 200 with both tokens
+- wrong password and unknown email produce the **identical** 401 response
+- a `SUSPENDED` customer gets 401
+
+---
+
+**AUTH-10 · `POST /auth/refresh`**
+Depends on: AUTH-8
+
+*Acceptance:* a valid refresh token returns a new access token and a new refresh token; the old refresh token then fails with 401.
+
+---
+
+**AUTH-11 · `POST /auth/logout`**
+Depends on: AUTH-8
+
+*Acceptance:* revokes the presented refresh token; a refresh with it afterwards returns 401.
+
+---
+
+### Story 2.3 — Endpoints know who is calling
+
+**AUTH-12 · Current-customer resolver**
+Depends on: AUTH-5
+
+A way for a controller to receive the authenticated customer id without parsing a token itself — a custom `HandlerMethodArgumentResolver`, or `@AuthenticationPrincipal` on a custom principal.
+
+*Acceptance:* a controller method signature can take the customer id directly; no controller touches `JwtTokenService`.
+
+---
+
+**AUTH-13 · Role-based authorization**
+Depends on: AUTH-5
+
+Map `Role` to `ROLE_CUSTOMER` / `ROLE_ADMIN` authorities. Enable method security.
+
+*Acceptance:* an endpoint restricted to ADMIN returns 403 for a valid CUSTOMER token — 403, not 401.
+
+---
+
+**AUTH-14 · Suspended customers lose access**
+Depends on: AUTH-9
+
+*Acceptance:* suspending a customer revokes all their refresh tokens; they cannot log in again.
+
+Note the honest limit: an already-issued access token stays valid until it expires. That is why access-token lifetime is short.
+
+---
+
+### Story 2.4 — I can change my password
+
+**AUTH-15 · `POST /auth/password`**
+Depends on: AUTH-8, AUTH-12
+
+*Acceptance:*
+- requires the current password; a wrong one gives 401
+- the new password is validated like registration
+- on success, every refresh token for that customer is revoked
+
+---
+
+**AUTH-16 · Integration test for the whole auth flow**
+Depends on: AUTH-11, AUTH-15
+
+*Acceptance:* register → login → call a protected endpoint → refresh → call again → logout → refresh fails. One test, one story.
+
+---
+
+# EPIC 3 — Customer Profile
+
+### Story 3.1 — I can see my profile
+
+**CUS-1 · `GET /customers/me`**
+Depends on: AUTH-12
+
+*Acceptance:* returns id, email, first name, last name, phone number, created date. Never the password hash.
+
+---
+
+### Story 3.2 — I can edit my profile
+
+**CUS-2 · `PATCH /customers/me`**
+Depends on: CUS-1
+
+First name, last name, phone number only.
+
+*Acceptance:* email and role cannot be changed through this endpoint; absent fields are left untouched.
+
+---
+
+**CUS-3 · Profile integration tests**
+Depends on: CUS-2
+
+*Acceptance:* an unauthenticated call gets 401; a customer can only ever read and write their own profile.
+
+---
+
+# EPIC 4 — Accounts
+
+New package: `com.plata.account`
+
+### Story 4.1 — I can open an account
+
+**ACC-1 · `accounts` migration**
+Depends on: nothing
+
+`V3__create_accounts_table.sql`: id UUID PK, `customer_id` UUID **nullable** FK, `type` VARCHAR(20) (`CUSTOMER` / `SYSTEM`), currency VARCHAR(3), status VARCHAR(20), display_name VARCHAR(100), version BIGINT, created_at TIMESTAMPTZ. Index on customer_id.
+
+**There is no balance column.** Balance is derived from the ledger (LED-7). A separately editable balance column is how money quietly appears and disappears.
+
+`customer_id` is nullable because of the system account in LED-3 — the counterparty for money entering and leaving the platform.
+
+*Acceptance:* migration applies; `./mvnw test` still green.
+
+---
+
+**ACC-2 · `Account` entity and `AccountStatus`**
+Depends on: ACC-1, MON-1
+
+`@Entity` with `@Version`. Static factory `Account.open(customerId, currency, displayName)`. **No public setters.** Behaviour methods: `freeze()`, `unfreeze()`, `close()`, `canSend()`, `canReceive()`.
+
+Status rules from BR-005: `ACTIVE` does everything; `FROZEN` can receive but not send or withdraw; `CLOSED` does nothing.
+
+*Acceptance:*
+- a new account is `ACTIVE`
+- the class has no public setter
+- `canReceive()` is true for `FROZEN`, false for `CLOSED`
+
+---
+
+**ACC-3 · `AccountRepository`**
+Depends on: ACC-2
+
+*Acceptance:* `findByIdAndCustomerId` and `findAllByCustomerId` exist. Plain `findById` is not used anywhere in customer-facing code.
+
+---
+
+**ACC-4 · Ownership lookup in one place**
+Depends on: ACC-3
+
+One method — `AccountService.getOwnedAccount(accountId, customerId)` — that throws `AccountNotFoundException` when the account does not exist **or** is not owned by that customer.
+
+Every account operation goes through it. This is the single most exploited bug in wallet applications: an endpoint that trusts the account id in the URL.
+
+*Acceptance:* the two cases are indistinguishable from outside — both produce 404. A 403 would confirm the account exists.
+
+---
+
+**ACC-5 · `AccountService.open(...)`**
+Depends on: ACC-4
+
+*Acceptance:* creates an `ACTIVE`, `CUSTOMER`-type account in the platform currency, owned by the calling customer. A customer may hold several (BR-003).
+
+---
+
+**ACC-6 · `POST /accounts`**
+Depends on: ACC-5, AUTH-12
+
+*Acceptance:* 201 with id, currency, status, display name, `balance` of `0.00`, created date.
+
+---
+
+### Story 4.2 — I can see my accounts
+
+**ACC-7 · `GET /accounts`**
+Depends on: ACC-6
+
+*Acceptance:* returns only the caller's accounts; never a `SYSTEM` account.
+
+---
+
+**ACC-8 · `GET /accounts/{id}`**
+Depends on: ACC-7
+
+*Acceptance:* another customer's account id returns 404.
+
+---
+
+### Story 4.3 — Nobody else can touch my account
+
+**ACC-9 · Account integration tests**
+Depends on: ACC-8
+
+*Acceptance:* customer A gets 404 for every operation on customer B's account — read, and later deposit, withdraw and transfer. One test per endpoint.
+
+---
+
+# EPIC 5 — Transactions and Ledger
+
+New package: `com.plata.ledger`. This is the financial core — the rest of the product is endpoints around it.
+
+### Story 5.1 — Every movement of my money is recorded, and my balance can be proven from it
+
+**LED-1 · `transactions` migration**
+Depends on: ACC-1
+
+`V4__create_transactions_table.sql`: id UUID PK, type VARCHAR(20) (`DEPOSIT` / `WITHDRAWAL` / `TRANSFER`), `idempotency_key` VARCHAR(255) NULL UNIQUE, note VARCHAR(255) NULL, created_at TIMESTAMPTZ.
+
+A transaction row exists only if the operation succeeded — there is no `FAILED` state to model (BR-010: a rejected operation writes nothing).
+
+*Acceptance:* unique index on `idempotency_key`; migration applies.
+
+---
+
+**LED-2 · `ledger_entries` migration**
+Depends on: LED-1
+
+`V5__create_ledger_entries_table.sql`: id UUID PK, transaction_id FK NOT NULL, account_id FK NOT NULL, direction VARCHAR(6) (`DEBIT` / `CREDIT`), amount BIGINT NOT NULL, currency VARCHAR(3) NOT NULL, created_at TIMESTAMPTZ. Index on `(account_id, created_at DESC)`.
+
+Convention, written down once and never varied: **CREDIT increases an account's balance, DEBIT decreases it.**
+
+*Acceptance:* migration applies; the index exists.
+
+---
+
+**LED-3 · Seed the system account**
+Depends on: ACC-1
+
+A migration inserting one `SYSTEM` account with a fixed UUID and `customer_id` NULL.
+
+Double entry needs two sides. A deposit is not "the balance goes up" — it is a CREDIT on the customer account and a DEBIT on the system account. Without this, entries cannot balance.
+
+*Acceptance:* the system account exists after migration and never appears in `GET /accounts`.
+
+---
+
+**LED-4 · `Transaction` and `LedgerEntry` entities**
+Depends on: LED-2
+
+Both immutable: no setters, no update methods, package-private constructors.
+
+*Acceptance:* nothing outside `com.plata.ledger` can construct a `LedgerEntry`.
+
+---
+
+**LED-5 · The balancing invariant**
+Depends on: LED-4
+
+A factory that builds a `Transaction` with its entries and **refuses** to build when: total CREDIT ≠ total DEBIT, entries span more than one currency, or there are fewer than two entries.
+
+This is the invariant the whole platform rests on. It belongs in the factory, not in a service method a future caller can bypass.
+
+*Acceptance:*
+- an unbalanced set of entries throws `UnbalancedTransactionException`
+- there is no other code path that creates a `LedgerEntry`
+
+---
+
+**LED-6 · `LedgerService.post(...)`**
+Depends on: LED-5
+
+`@Transactional`. Saves the transaction and all its entries, or nothing.
+
+*Acceptance:* the only write path into the ledger in the entire codebase.
+
+---
+
+**LED-7 · Balance derived from entries**
+Depends on: LED-6
+
+```sql
+SELECT COALESCE(SUM(CASE WHEN direction = 'CREDIT' THEN amount ELSE -amount END), 0)
+FROM ledger_entries WHERE account_id = ?
+```
+
+Return it as `Money`.
+
+*Acceptance:*
+- an account with no entries has a balance of zero
+- the balance reflects every posted entry
+- there is no balance field stored anywhere
+
+---
+
+**LED-8 · Make the ledger append-only in the database**
+Depends on: LED-2
+
+Revoke UPDATE and DELETE on `ledger_entries` and `transactions` from the application role, or add a trigger that raises on either.
+
+BR-011 requires immutability. "We never update that table" is a habit; a revoked grant is a guarantee.
+
+*Acceptance:* an `UPDATE` against `ledger_entries` fails at the database, proven by a test.
+
+---
+
+**LED-9 · Unit tests for the invariant**
+Depends on: LED-5
+
+*Acceptance:* unbalanced rejected; mixed currencies rejected; a single entry rejected; a valid two-entry transaction builds.
+
+---
+
+**LED-10 · Integration test: derived balance is correct**
+Depends on: LED-7
+
+*Acceptance:* after a sequence of postings, the derived balance equals the arithmetic sum of them.
+
+---
+
+# EPIC 6 — Deposits
+
+### Story 6.1 — I can put money into my account
+
+**DEP-1 · Idempotency**
+Depends on: LED-6
+
+Client sends an `Idempotency-Key` header. Before doing anything, look for a transaction with that key: if it exists, return its result instead of acting again.
+
+Build it here and reuse it for withdrawals and transfers. Retrofitting idempotency onto a live money endpoint is far harder than building it in, and it is the only thing standing between a client timeout-and-retry and a double payment.
+
+*Acceptance:* the same request sent twice produces one transaction, one pair of entries, and the same response body both times.
+
+---
+
+**DEP-2 · `DepositService.deposit(...)`**
+Depends on: DEP-1, ACC-4
+
+Validate, then post: CREDIT the customer account, DEBIT the system account.
+
+*Acceptance:*
+- amount must be greater than zero (BR-007)
+- a `CLOSED` account is rejected; `FROZEN` is allowed, since it may receive (BR-005)
+- exactly two ledger entries, and they balance
+- the whole thing is one database transaction
+
+---
+
+**DEP-3 · `POST /accounts/{id}/deposits`**
+Depends on: DEP-2
+
+*Acceptance:* 201 with transaction id, amount, and the new balance. Another customer's account id gives 404.
+
+---
+
+**DEP-4 · Deposit integration tests**
+Depends on: DEP-3
+
+*Acceptance:* balance increases by the amount; two balanced entries exist; a repeated idempotency key deposits once; zero and negative amounts are rejected.
+
+---
+
+# EPIC 7 — Withdrawals
+
+### Story 7.1 — I can take money out of my account
+
+**WDR-1 · `WithdrawalService.withdraw(...)`**
+Depends on: DEP-2, LED-7
+
+DEBIT the customer account, CREDIT the system account.
+
+*Acceptance:*
+- amount greater than zero (BR-008)
+- the account must be `ACTIVE` — `FROZEN` cannot withdraw (BR-015)
+- balance may never go negative
+
+---
+
+**WDR-2 · Insufficient funds**
+Depends on: WDR-1
+
+*Acceptance:* withdrawing more than the balance is rejected with a clear error, **and no ledger entry is written** — the check happens before any posting.
+
+---
+
+**WDR-3 · `POST /accounts/{id}/withdrawals`**
+Depends on: WDR-2
+
+*Acceptance:* 201 with transaction id and the new balance; idempotency honoured as in DEP-1.
+
+---
+
+**WDR-4 · Withdrawal integration tests**
+Depends on: WDR-3
+
+*Acceptance:* a successful withdrawal reduces the balance; over-withdrawal is rejected and leaves the ledger untouched; a frozen account is rejected.
+
+---
+
+# EPIC 8 — Transfers
+
+### Story 8.1 — I can send money to another account
+
+**TRF-1 · `TransferService.transfer(...)`**
+Depends on: DEP-1, LED-6
+
+Signature: source account, destination account, `Money`, optional note, idempotency key.
+
+*Acceptance:* on success, exactly one transaction row and two balanced entries — DEBIT source, CREDIT destination.
+
+---
+
+**TRF-2 · Validation rules**
+Depends on: TRF-1
+
+Every rule from BR-009, all of them evaluated **before** any posting:
+
+- the caller owns the source account
+- both accounts exist
+- they are different accounts
+- amount is greater than zero
+- source is `ACTIVE`
+- destination is `ACTIVE` **or** `FROZEN` — a frozen account can still receive (BR-005). This one is easy to get wrong.
+- the source has sufficient funds
+
+*Acceptance:* one unit test per rule, each asserting the specific error.
+
+---
+
+**TRF-3 · Atomicity**
+Depends on: TRF-2
+
+One `@Transactional` boundary covering the transaction row and both entries.
+
+*Acceptance:* forcing a failure after the first entry leaves nothing in the database.
+
+---
+
+**TRF-4 · Prevent concurrent overdraw**
+Depends on: TRF-3
+
+Because the balance is derived rather than stored, `@Version` on the account does **not** protect it — two concurrent transfers can both read the same balance and both pass the funds check.
+
+Take a pessimistic lock on the source account row (`@Lock(PESSIMISTIC_WRITE)`, i.e. `SELECT ... FOR UPDATE`) before reading the balance, and hold it to the end of the transaction.
+
+*Acceptance:* see TRF-7.
+
+---
+
+**TRF-5 · `POST /transfers`**
+Depends on: TRF-4
+
+*Acceptance:* 201 with transaction id, amount and the source account's new balance. An unowned source account gives 404.
+
+---
+
+### Story 8.2 — I can attach a note to a transfer
+
+**TRF-6 · Optional transfer note**
+Depends on: TRF-5
+
+Free text, max 255 characters, no functional effect (BR-009).
+
+*Acceptance:* the note is stored and appears in both parties' history; absent is valid.
+
+---
+
+**TRF-7 · Concurrency test**
+Depends on: TRF-4
+
+Fund an account with exactly one transfer's worth. Fire ten transfers in parallel from it.
+
+*Acceptance:*
+- exactly one succeeds
+- the balance never goes negative
+- total CREDIT still equals total DEBIT across the ledger
+
+**This test is the point of the whole project.** If it passes reliably, the hard part is done.
+
+---
+
+**TRF-8 · A rejected transfer writes nothing**
+Depends on: TRF-2
+
+*Acceptance:* after every rejection case in TRF-2, `transactions` and `ledger_entries` have exactly the row counts they had before.
+
+---
+
+**TRF-9 · Transfer integration tests**
+Depends on: TRF-5
+
+*Acceptance:* happy path across two customers; both balances correct afterwards; a repeated idempotency key transfers once.
+
+---
+
+# EPIC 9 — Transaction History
+
+### Story 9.1 — I can see everything that happened to my money
+
+**HIS-1 · History read model**
+Depends on: TRF-1
+
+A query joining `transactions` and `ledger_entries` for a given account, returning direction, amount, counterparty, note and timestamp.
+
+*Acceptance:* a transfer appears in both parties' history, with opposite directions.
+
+---
+
+**HIS-2 · Pagination**
+Depends on: HIS-1
+
+From the first commit, not once it is slow. An unbounded list endpoint over a financial table is a problem you discover in production.
+
+*Acceptance:* a default page size is applied even when the client asks for none; a maximum page size is enforced.
+
+---
+
+**HIS-3 · `GET /accounts/{id}/transactions`**
+Depends on: HIS-2
+
+*Acceptance:* newest first; another customer's account gives 404.
+
+---
+
+**HIS-4 · `GET /transactions` across all my accounts**
+Depends on: HIS-3
+
+*Acceptance:* returns entries for every account the caller owns, and nothing else.
+
+---
+
+### Story 9.2 — I can narrow the list down
+
+**HIS-5 · Filters**
+Depends on: HIS-4
+
+By type, by account, by date range.
+
+*Acceptance:* filters combine; an invalid date range gives 400.
+
+---
+
+**HIS-6 · Query indexes**
+Depends on: HIS-5
+
+*Acceptance:* the history query uses an index — checked with `EXPLAIN`, not by feel.
+
+---
+
+### Story 9.3 — I can look at one transaction in detail
+
+**HIS-7 · `GET /transactions/{id}`**
+Depends on: HIS-4
+
+*Acceptance:* full detail including both ledger entries; a transaction touching none of the caller's accounts gives 404.
+
+---
+
+**HIS-8 · Ownership filtering everywhere**
+Depends on: HIS-7
+
+*Acceptance:* no history endpoint can return a row that does not belong to one of the caller's accounts. One test per endpoint.
+
+---
+
+**HIS-9 · History integration tests**
+Depends on: HIS-8
+
+*Acceptance:* after a deposit, a withdrawal and a transfer, the history shows exactly three entries in the right order with the right directions.
+
+---
+
+# Deferred
+
+Not in this backlog on purpose. Revisit once the MVP runs end to end.
+
+Account freeze and close endpoints · administration APIs · audit log · notifications · rate limiting · observability · OpenAPI · Docker and deployment · multi-currency · Kafka · Redis.

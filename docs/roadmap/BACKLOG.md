@@ -12,11 +12,13 @@ Take one story, work through its three or four subtasks, and you have shipped a 
 
 # Where the code is now
 
-- `customer/` — `Customer` entity, repository, `CustomerService.register/login`, `AuthController` with `/auth/register` and `/auth/login`
-- `common/` — `PasswordEncoder` bean, `BusinessException`, `GlobalExceptionHandler`
-- `V1__create_customers_table.sql`
+- `common/` — `PasswordEncoder` bean, `BusinessException`, `GlobalExceptionHandler` (RFC 7807)
+- `V1__create_customers_table.sql` — id, email, password_hash, role, status, first_name, last_name, phone_number, created_at
+- `PlataApplication`
 
-No tests of business logic. No security — every endpoint is open.
+The `customer/` module was deliberately deleted, so registration and login are written from scratch. The `customers` table survives, so Story 1.1 needs no new migration.
+
+No tests of business logic. No security — `spring-boot-starter-security` is not a dependency yet.
 
 ---
 
@@ -45,11 +47,11 @@ Covers PRD §3, BR-001, BR-002, BR-017.
 
 ## Story 1.1 — User registration
 
-Registration already works but is untested and unhardened.
+Built from scratch. The `customers` table already exists, so no new migration.
 
 *Done when:* a new customer can be created with a unique, normalized email and a hashed password, and every rule in BR-001 is proven by a test.
 
-- **Implement domain, persistence and use case** — email as a normalized value object, password policy, `Customer` invariants and factory. Tighten the existing `CustomerService.register`.
+- **Implement domain, persistence and use case** — create the `com.plata.customer` module: `Customer` aggregate with `Role` and `CustomerStatus`, email as a normalized value object, no public setters, a factory assigning `CUSTOMER`/`ACTIVE`, a repository over the existing table, and the registration service. The duplicate check should rely on the unique constraint, not only a prior read.
 - **Implement REST API** — request validation, 409 on duplicate email, response that can never leak the password hash.
 - **Add tests** — unit tests for the use case, integration tests for the endpoint against real PostgreSQL.
 

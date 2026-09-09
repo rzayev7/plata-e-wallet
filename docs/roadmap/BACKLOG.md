@@ -1,7 +1,7 @@
 # Plata Product Backlog
 
 **Structure:** Epic → Story → Subtask
-**Scope:** 8 Epics · 19 Stories · 45 Subtasks
+**Scope:** 8 Epics · 19 Stories · 43 Subtasks
 
 A **Story** is a product capability. Finishing one means a real feature works end to end.
 A **Subtask** is a meaningful chunk of engineering — several hours, not a single class.

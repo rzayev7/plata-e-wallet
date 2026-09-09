@@ -1,0 +1,200 @@
+Issue Type,Summary,Epic Name,Epic Link,Priority,Labels,Description
+Epic,Engineering Foundation,Engineering Foundation,,Highest,plata;M0;devops;architecture,"Project can be built, tested and debugged. ROADMAP.md Phase 0."
+Epic,Authentication and Customer Account,Authentication and Customer Account,,Highest,plata;M1;development;security,"Registration, login, JWT, refresh tokens, profile. PRD sections 3 and 4. BR-001, BR-002, BR-017."
+Epic,Money,Money,,Highest,plata;M1;development;architecture,"Shared money representation used by every financial feature. BR-004a."
+Epic,Wallets,Wallets,,Highest,plata;M1;development,"Wallet creation and viewing. PRD 5.1 and 5.2. BR-003, BR-004, BR-004a."
+Epic,Ledger,Ledger,,Highest,plata;M1;development;architecture,"Double-entry ledger. The financial source of truth. PRD 10. BR-010, BR-011, BR-018."
+Epic,Deposits,Deposits,,High,plata;M1;development,"Simulated deposits. PRD 6. BR-007."
+Epic,Transfers,Transfers,,Highest,plata;M1;development,"Money movement between wallets. PRD 8. BR-009, BR-010."
+Epic,Transaction History,Transaction History,,High,plata;M1;development,"Customer-facing history of every operation. PRD 9. BR-012."
+Epic,Withdrawals,Withdrawals,,High,plata;M1;development,"Simulated withdrawals. PRD 7. BR-008."
+Epic,Wallet Lifecycle,Wallet Lifecycle,,Medium,plata;M2;development,"Rename, close, freeze and unfreeze. PRD 5.3 to 5.5. BR-005, BR-006, BR-006a, BR-015."
+Epic,Audit Logging,Audit Logging,,Medium,plata;M2;development;security,"Immutable record of every auditable event. PRD 14. BR-016."
+Epic,Notifications,Notifications,,Medium,plata;M2;development,"In-app notifications. PRD 11. BR-013."
+Epic,Administration,Administration,,Medium,plata;M2;development;security,"Administrative operations. PRD 13. BR-014, BR-015."
+Epic,Security Hardening,Security Hardening,,Medium,plata;M3;security,"Protections needed before the service is reachable from the internet. PRD 12. BR-017."
+Epic,Observability API and Delivery,Observability API and Delivery,,Low,plata;M3;devops;observability,"Metrics, health, API documentation and deployment. PRD 16. ROADMAP Phase 5."
+Task,FND-T1 Git repository and initial commit,,Engineering Foundation,Highest,plata;M0;devops;size-S;done,Done.
+Task,FND-T2 CI pipeline running mvn verify on push and pull request,,Engineering Foundation,Highest,plata;M0;devops;size-S;done,Done.
+Task,FND-T3 Architecture document and ADR-0004 package structure,,Engineering Foundation,Highest,plata;M0;architecture;size-M;done,Done.
+Task,FND-T4 Logback JSON encoder configuration,,Engineering Foundation,Highest,plata;M0;observability;size-S,First half of structured logging. ROADMAP Phase 0.
+Task,FND-T5 Correlation ID filter accepting X-Correlation-Id or generating one,,Engineering Foundation,Highest,plata;M0;observability;size-M,Depends on FND-T4. Debugging a failed transfer without a correlation ID is where println habits are born.
+Task,FND-T6 Put the correlation ID in the MDC and in every log line,,Engineering Foundation,Highest,plata;M0;observability;size-S,Depends on FND-T5. Done when one request's lines can be filtered by a single ID.
+Task,FND-T7 Return the correlation ID in the response header,,Engineering Foundation,High,plata;M0;observability;size-S,Depends on FND-T5. Lets a caller quote the ID when reporting a problem.
+Task,FND-T8 Confirm no password token or hash reaches the logs,,Engineering Foundation,Highest,plata;M0;security;testing;size-S,Depends on FND-T6.
+Task,FND-T9 docker-compose.yml with PostgreSQL for local development,,Engineering Foundation,High,plata;M0;devops;size-S,"The file is currently empty. Done when docker compose up -d then mvnw spring-boot:run works on a clean machine."
+Task,FND-T10 Coding standards document,,Engineering Foundation,Medium,plata;M0;architecture;size-S,"One page. Naming, package layout, what belongs in which layer, commit message format."
+Task,FND-T11 Pin the PostgreSQL image version in TestcontainersConfiguration,,Engineering Foundation,High,plata;M0;testing;size-S,Currently postgres:latest. A suite that breaks when the image moves is not a suite.
+Task,FND-T12 Base integration test class with shared Testcontainers setup,,Engineering Foundation,High,plata;M0;testing;size-M,Depends on FND-T11. Every later integration test builds on this.
+Task,FND-T13 ArchUnit rule no module touches another module's repository or entity,,Engineering Foundation,Medium,plata;M0;architecture;testing;size-S,Blocked until a second module exists. See ADR-0004 rule 3.
+Task,FND-T14 ArchUnit rules no field injection and no cycles between modules,,Engineering Foundation,Medium,plata;M0;architecture;testing;size-S,Depends on FND-T13.
+Story,AUTH-S1 Register with email and password,,Authentication and Customer Account,Highest,plata;M1;development;size-M;done,Done. BR-001.
+Story,AUTH-S2 Log in and receive an access and refresh token,,Authentication and Customer Account,Highest,plata;M1;development;size-S,Depends on AUTH-T8. BR-002.
+Story,AUTH-S3 Refresh my access token without logging in again,,Authentication and Customer Account,Highest,plata;M1;development;size-S,Depends on AUTH-T9.
+Story,AUTH-S4 Log out invalidating my refresh token,,Authentication and Customer Account,High,plata;M1;development;size-S,Depends on AUTH-T10. PRD 3.3.
+Story,AUTH-S5 Log out from every device,,Authentication and Customer Account,Medium,plata;M1;development;size-S,Depends on AUTH-T10. PRD 3.4.
+Story,AUTH-S6 Change my password,,Authentication and Customer Account,High,plata;M1;development;size-S,Depends on AUTH-T14. PRD 3.4.
+Story,AUTH-S7 View my profile and account creation date,,Authentication and Customer Account,Medium,plata;M1;development;size-S,Depends on AUTH-T12. PRD 4.
+Story,AUTH-S8 Edit my first name last name and phone number,,Authentication and Customer Account,Medium,plata;M1;development;size-S,Depends on AUTH-S7. PRD 4.
+Task,AUTH-T1 Add spring-boot-starter-security and a SecurityFilterChain,,Authentication and Customer Account,Highest,plata;M1;security;size-M,"The starter is not currently a dependency, so every endpoint is open right now. Adding it locks everything by default."
+Task,AUTH-T2 Declare which paths are public and which require authentication,,Authentication and Customer Account,Highest,plata;M1;security;size-S,"Depends on AUTH-T1. Public: register, login, actuator health."
+Task,AUTH-T3 JwtTokenService issuing signed access tokens,,Authentication and Customer Account,Highest,plata;M1;security;size-M,Depends on AUTH-T1. jjwt is already in pom.xml and jwt.secret is already in application.yml.
+Task,AUTH-T4 JWT authentication filter populating the security context,,Authentication and Customer Account,Highest,plata;M1;security;size-M,Depends on AUTH-T3.
+Task,AUTH-T5 Reject expired tampered and absent tokens with 401,,Authentication and Customer Account,Highest,plata;M1;security;testing;size-S,Depends on AUTH-T4.
+Task,AUTH-T6 Token expiry read from configuration not a constant,,Authentication and Customer Account,High,plata;M1;security;size-S,Depends on AUTH-T3.
+Task,AUTH-T7 refresh_tokens migration with hashed token expiry and revoked flag,,Authentication and Customer Account,Highest,plata;M1;security;size-S,"Store a hash of the token, never the token. A leaked database should not be a leaked session."
+Task,AUTH-T8 RefreshToken entity and repository,,Authentication and Customer Account,Highest,plata;M1;development;size-S,Depends on AUTH-T7.
+Task,AUTH-T9 Issue a refresh token and rotate it on every use,,Authentication and Customer Account,Highest,plata;M1;security;size-M,Depends on AUTH-T8. A reused token must be rejected.
+Task,AUTH-T10 Revoke a refresh token individually and for a whole customer,,Authentication and Customer Account,High,plata;M1;security;size-M,Depends on AUTH-T9. BR-017 requires revocability.
+Task,AUTH-T11 Map Role onto Spring authorities,,Authentication and Customer Account,High,plata;M1;security;size-S,Depends on AUTH-T4.
+Task,AUTH-T12 CurrentCustomer resolver for the authenticated customer id,,Authentication and Customer Account,Highest,plata;M1;development;size-S,Depends on AUTH-T4. Everything that checks ownership needs this.
+Task,AUTH-T13 Block authentication for suspended customers,,Authentication and Customer Account,High,plata;M1;security;size-S,Depends on AUTH-T4. BR-002.
+Task,AUTH-T14 Password change verifying current password and revoking all refresh tokens,,Authentication and Customer Account,High,plata;M1;security;size-M,Depends on AUTH-T10.
+Task,AUTH-T15 Profile endpoints and DTOs,,Authentication and Customer Account,Medium,plata;M1;development;size-S,Depends on AUTH-T12.
+Task,AUTH-T16 Unit tests for CustomerService,,Authentication and Customer Account,High,plata;M1;testing;size-M,No tests exist for it today.
+Task,AUTH-T17 Integration test duplicate email is rejected,,Authentication and Customer Account,High,plata;M1;testing;size-S,Depends on AUTH-T16. BR-001.
+Task,AUTH-T18 Integration test unknown email and wrong password give identical errors,,Authentication and Customer Account,Highest,plata;M1;testing;security;size-S,Depends on AUTH-T16. BR-002. Otherwise the login form becomes an account enumeration tool.
+Task,AUTH-T19 Integration test for the full login refresh and logout cycle,,Authentication and Customer Account,High,plata;M1;testing;size-M,Depends on AUTH-S4.
+Task,MON-T1 Currency type,,Money,Highest,plata;M1;development;size-S,BR-004a. Version 1 has one platform currency but the type exists from the start.
+Task,MON-T2 Money value object holding long minor units plus currency,,Money,Highest,plata;M1;development;architecture;size-S,"Depends on MON-T1. Never double, never a bare BigDecimal."
+Task,MON-T3 Money arithmetic comparison and a hard failure on mixed currencies,,Money,Highest,plata;M1;development;size-S,Depends on MON-T2.
+Task,MON-T4 JPA mapping for Money,,Money,Highest,plata;M1;development;size-S,Depends on MON-T2. Needed before any table stores an amount.
+Task,MON-T5 JSON representation of Money for the API,,Money,High,plata;M1;development;size-S,Depends on MON-T2.
+Task,MON-T6 Unit tests for every Money operation and the mixed-currency failure,,Money,Highest,plata;M1;testing;size-S,"Depends on MON-T3. Do this epic before anything stores a balance: changing the money type later means rewriting every table and test that touches an amount."
+Story,WAL-S1 Create a wallet,,Wallets,Highest,plata;M1;development;size-S,Depends on WAL-T4. BR-004. Zero balance and ACTIVE status.
+Story,WAL-S2 List my wallets,,Wallets,High,plata;M1;development;size-S,Depends on WAL-S1. BR-003.
+Story,WAL-S3 View one of my wallets,,Wallets,High,plata;M1;development;size-S,Depends on WAL-S1. PRD 5.2.
+Task,WAL-T1 wallets table migration,,Wallets,Highest,plata;M1;development;size-S,Depends on MON-T4.
+Task,WAL-T2 Wallet entity with owner currency status display name and version,,Wallets,Highest,plata;M1;development;architecture;size-M,"Depends on WAL-T1. Balance is not a column: it is derived from the ledger. A stored editable balance is how money quietly appears and disappears."
+Task,WAL-T3 WalletRepository,,Wallets,High,plata;M1;development;size-S,Depends on WAL-T2.
+Task,WAL-T4 WalletService create with zero balance and ACTIVE status,,Wallets,Highest,plata;M1;development;size-M,Depends on WAL-T3. BR-004.
+Task,WAL-T5 Wallet request and response DTOs,,Wallets,High,plata;M1;development;size-S,Depends on WAL-T4.
+Task,WAL-T6 Wallet controller endpoints,,Wallets,High,plata;M1;development;size-S,Depends on WAL-T5.
+Task,WAL-T7 Ownership check applied to every wallet operation,,Wallets,Highest,plata;M1;security;size-M,"Depends on AUTH-T12. BR-003. The most commonly exploited bug in wallet applications: an endpoint that trusts the wallet id in the URL and never checks who owns it."
+Task,WAL-T8 Another customer's wallet returns 404 not 403,,Wallets,Highest,plata;M1;security;size-S,Depends on WAL-T7. 403 confirms the wallet exists and leaks information.
+Task,WAL-T9 Unit tests for WalletService,,Wallets,High,plata;M1;testing;size-M,Depends on WAL-T4.
+Task,WAL-T10 Integration tests including cross-customer access attempts,,Wallets,Highest,plata;M1;testing;security;size-M,Depends on WAL-T8.
+Story,LED-S1 Administrator reconstructs a wallet balance from ledger entries,,Ledger,Medium,plata;M2;development;size-M,Depends on LED-T8. PRD 10 requires balance reconstruction for reconciliation.
+Task,LED-T1 ledger_accounts migration,,Ledger,Highest,plata;M1;development;size-S,Depends on WAL-T1.
+Task,LED-T2 ledger_transactions migration,,Ledger,Highest,plata;M1;development;size-S,Depends on LED-T1.
+Task,LED-T3 ledger_entries migration with direction amount account and transaction,,Ledger,Highest,plata;M1;development;size-M,Depends on LED-T2.
+Task,LED-T4 LedgerAccount entity,,Ledger,Highest,plata;M1;development;size-S,Depends on LED-T1.
+Task,LED-T5 LedgerEntry entity immutable with no setters,,Ledger,Highest,plata;M1;development;size-S,Depends on LED-T3. BR-011.
+Task,LED-T6 LedgerTransaction aggregate whose factory enforces balance,,Ledger,Highest,plata;M1;development;architecture;size-L,"Depends on LED-T5. Total debits must equal total credits, checked when the object is built rather than in a service a future caller can bypass. BR-010."
+Task,LED-T7 LedgerService post as the only write path into the ledger,,Ledger,Highest,plata;M1;development;architecture;size-M,Depends on LED-T6.
+Task,LED-T8 Balance query derived from entries,,Ledger,Highest,plata;M1;development;size-M,Depends on LED-T7.
+Task,LED-T9 Platform account funding deposits and receiving withdrawals,,Ledger,Highest,plata;M1;development;size-M,"Depends on LED-T4. Double entry needs both sides: a deposit is a debit on the platform account and a credit on the wallet account."
+Task,LED-T10 Revoke UPDATE and DELETE on the ledger tables,,Ledger,Highest,plata;M1;security;size-S,"Depends on LED-T3. BR-011. We never update that table is a habit; a revoked grant is a guarantee."
+Task,LED-T11 Indexes for balance and entry lookups,,Ledger,High,plata;M1;development;size-S,Depends on LED-T8.
+Task,LED-T12 Unit test that an unbalanced transaction cannot be constructed,,Ledger,Highest,plata;M1;testing;size-M,Depends on LED-T6.
+Task,LED-T13 Integration test that derived balance equals the sum of every operation,,Ledger,Highest,plata;M1;testing;size-M,Depends on LED-T8.
+Story,DEP-S1 Deposit money into my wallet,,Deposits,Highest,plata;M1;development;size-M,Depends on DEP-T4. BR-007. Simulated only in Version 1.
+Task,DEP-T1 idempotency_keys migration,,Deposits,Highest,plata;M1;development;size-S,Foundation for both deposits and transfers.
+Task,DEP-T2 Idempotency interceptor reading an Idempotency-Key header,,Deposits,Highest,plata;M1;development;architecture;size-M,"Depends on DEP-T1. Built here and reused by transfers: retrofitting idempotency onto a live money endpoint is far harder."
+Task,DEP-T3 A repeated key returns the original response instead of acting again,,Deposits,Highest,plata;M1;development;size-M,Depends on DEP-T2. This is what protects against a client timeout and retry.
+Task,DEP-T4 DepositService with BR-007 validation,,Deposits,Highest,plata;M1;development;size-M,Depends on LED-T7. Amount must be greater than zero.
+Task,DEP-T5 Deposit posts balanced ledger entries in one database transaction,,Deposits,Highest,plata;M1;development;size-M,Depends on DEP-T4.
+Task,DEP-T6 Deposit endpoint and DTOs,,Deposits,High,plata;M1;development;size-S,Depends on DEP-T5.
+Task,DEP-T7 Unit tests for deposit rules,,Deposits,High,plata;M1;testing;size-S,Depends on DEP-T4.
+Task,DEP-T8 Integration test that the same key sent twice deposits once,,Deposits,Highest,plata;M1;testing;size-M,Depends on DEP-T3.
+Story,TRF-S1 Send money to another wallet,,Transfers,Highest,plata;M1;development;size-L,Depends on TRF-T8. BR-009. The reason the project exists.
+Story,TRF-S2 Attach a note to a transfer for the recipient,,Transfers,Low,plata;M1;development;size-S,Depends on TRF-S1. BR-009. Optional free text with no functional effect.
+Task,TRF-T1 transfers migration,,Transfers,Highest,plata;M1;development;size-S,Depends on LED-T3.
+Task,TRF-T2 Transfer entity,,Transfers,Highest,plata;M1;development;size-S,Depends on TRF-T1.
+Task,TRF-T3 TransferService orchestration,,Transfers,Highest,plata;M1;development;size-L,Depends on LED-T7.
+Task,TRF-T4 Validate both wallets exist differ and the amount is positive,,Transfers,Highest,plata;M1;development;size-M,Depends on TRF-T3. BR-009.
+Task,TRF-T5 Validate sender is ACTIVE and receiver is ACTIVE or FROZEN,,Transfers,Highest,plata;M1;development;size-M,"Depends on TRF-T4. BR-005 is deliberate and easy to get wrong: a frozen wallet can still receive."
+Task,TRF-T6 Sufficient funds check before any ledger entry is written,,Transfers,Highest,plata;M1;development;size-M,Depends on TRF-T5. BR-010 requires that a rejected transfer leaves no partial state.
+Task,TRF-T7 Optimistic locking with a bounded retry on conflict,,Transfers,Highest,plata;M1;development;architecture;size-M,Depends on TRF-T6.
+Task,TRF-T8 One database transaction covering ledger entries and transfer record,,Transfers,Highest,plata;M1;development;size-M,Depends on TRF-T7. BR-009 atomicity.
+Task,TRF-T9 Idempotency applied to the transfer endpoint,,Transfers,Highest,plata;M1;development;size-S,Depends on DEP-T3.
+Task,TRF-T10 Transfer endpoint and DTOs,,Transfers,High,plata;M1;development;size-S,Depends on TRF-T8.
+Task,TRF-T11 Unit tests one per BR-009 rule,,Transfers,Highest,plata;M1;testing;size-L,Depends on TRF-T6.
+Task,TRF-T12 Integration test for the transfer happy path,,Transfers,Highest,plata;M1;testing;size-M,Depends on TRF-T10.
+Task,TRF-T13 Concurrency test that parallel transfers cannot overdraw a wallet,,Transfers,Highest,plata;M1;testing;size-L,"Depends on TRF-T7. Fire N simultaneous transfers from a wallet that can fund one. Exactly one succeeds, the balance never goes negative, the ledger still balances. This test is the point of the whole project."
+Task,TRF-T14 Test that a rejected transfer leaves no ledger entries at all,,Transfers,Highest,plata;M1;testing;size-M,Depends on TRF-T6. BR-010.
+Story,HIS-S1 View my transaction history newest first,,Transaction History,High,plata;M1;development;size-M,Depends on HIS-T2. PRD 9.
+Story,HIS-S2 Filter my history by wallet type and date range,,Transaction History,Medium,plata;M1;development;size-S,Depends on HIS-S1. PRD 9.
+Story,HIS-S3 View the full detail of one transaction,,Transaction History,Medium,plata;M1;development;size-S,Depends on HIS-S1. PRD 9.
+Task,HIS-T1 History read model over ledger and transfer records,,Transaction History,High,plata;M1;development;size-M,Depends on TRF-T8.
+Task,HIS-T2 Pagination on every history endpoint,,Transaction History,High,plata;M1;development;size-M,"Depends on HIS-T1. From the first commit, not once it is slow: an unbounded list endpoint over a financial table is a problem you find in production."
+Task,HIS-T3 Filter parameters and their validation,,Transaction History,Medium,plata;M1;development;size-S,Depends on HIS-T2.
+Task,HIS-T4 History endpoints and DTOs,,Transaction History,Medium,plata;M1;development;size-S,Depends on HIS-T3.
+Task,HIS-T5 Ownership filtering so a customer sees only their own transactions,,Transaction History,Highest,plata;M1;security;size-M,Depends on WAL-T7. BR-003.
+Task,HIS-T6 Indexes supporting the history queries,,Transaction History,Medium,plata;M1;development;size-S,Depends on HIS-T3.
+Task,HIS-T7 Integration tests including cross-customer isolation,,Transaction History,High,plata;M1;testing;security;size-M,Depends on HIS-T5.
+Story,WDR-S1 Withdraw money from my wallet,,Withdrawals,High,plata;M1;development;size-M,Depends on WDR-T1. BR-008. Simulated only in Version 1.
+Task,WDR-T1 WithdrawalService with BR-008 validation,,Withdrawals,High,plata;M1;development;size-M,Depends on LED-T7.
+Task,WDR-T2 Reject a withdrawal that would make the balance negative,,Withdrawals,Highest,plata;M1;development;size-S,Depends on WDR-T1. BR-008.
+Task,WDR-T3 A FROZEN wallet cannot withdraw,,Withdrawals,High,plata;M1;development;size-S,Depends on WDR-T1. BR-015.
+Task,WDR-T4 Withdrawal posts balanced ledger entries atomically,,Withdrawals,High,plata;M1;development;size-M,Depends on WDR-T1.
+Task,WDR-T5 Withdrawal endpoint and DTOs,,Withdrawals,Medium,plata;M1;development;size-S,Depends on WDR-T4.
+Task,WDR-T6 Unit and integration tests for withdrawals,,Withdrawals,High,plata;M1;testing;size-M,Depends on WDR-T5.
+Story,WLC-S1 Rename my wallet,,Wallet Lifecycle,Low,plata;M2;development;size-S,Depends on WLC-T1. BR-006a. The display name is cosmetic.
+Story,WLC-S2 Close a wallet that has a zero balance,,Wallet Lifecycle,Medium,plata;M2;development;size-M,Depends on WLC-T3. BR-006. Closure is permanent.
+Task,WLC-T1 Rename endpoint and validation,,Wallet Lifecycle,Low,plata;M2;development;size-S,Depends on WAL-T6.
+Task,WLC-T2 Wallet status state machine in a single place,,Wallet Lifecycle,High,plata;M2;development;architecture;size-M,"Depends on WAL-T2. Scattering these checks is how a frozen wallet ends up able to send through one endpoint but not another."
+Task,WLC-T3 Closure requires zero balance and no pending operations,,Wallet Lifecycle,Medium,plata;M2;development;size-M,Depends on WLC-T2. BR-006.
+Task,WLC-T4 Closure is permanent and a CLOSED wallet cannot be reopened,,Wallet Lifecycle,Medium,plata;M2;development;size-S,Depends on WLC-T3. BR-006 and ADR-0003.
+Task,WLC-T5 FROZEN blocks sending and withdrawing but allows receiving,,Wallet Lifecycle,High,plata;M2;development;size-M,Depends on WLC-T2. BR-005 and BR-015.
+Task,WLC-T6 CLOSED blocks every financial operation in both directions,,Wallet Lifecycle,High,plata;M2;development;size-S,Depends on WLC-T2. BR-005.
+Task,WLC-T7 Unit tests covering every status transition,,Wallet Lifecycle,High,plata;M2;testing;size-M,Depends on WLC-T2.
+Task,WLC-T8 Integration tests for closure and frozen wallet behaviour,,Wallet Lifecycle,High,plata;M2;testing;size-M,Depends on WLC-T6.
+Story,AUD-S1 Administrator reviews the audit log,,Audit Logging,Medium,plata;M2;development;size-M,Depends on AUD-T9. BR-014.
+Task,AUD-T1 audit_log migration with timestamp and actor,,Audit Logging,Medium,plata;M2;security;size-S,BR-016.
+Task,AUD-T2 AuditEvent entity immutable,,Audit Logging,Medium,plata;M2;development;size-S,Depends on AUD-T1. BR-016.
+Task,AUD-T3 AuditService,,Audit Logging,Medium,plata;M2;development;size-M,Depends on AUD-T2.
+Task,AUD-T4 Record registration login logout and password change,,Audit Logging,Medium,plata;M2;security;size-M,Depends on AUD-T3. BR-016.
+Task,AUD-T5 Record wallet creation closure freeze and unfreeze,,Audit Logging,Medium,plata;M2;security;size-M,Depends on AUD-T3. BR-016.
+Task,AUD-T6 Record deposits withdrawals and transfers,,Audit Logging,Medium,plata;M2;security;size-M,Depends on AUD-T3. BR-016.
+Task,AUD-T7 Record every administrative action,,Audit Logging,Medium,plata;M2;security;size-M,Depends on AUD-T3. BR-014 and BR-016.
+Task,AUD-T8 Revoke UPDATE and DELETE on audit_log,,Audit Logging,Medium,plata;M2;security;size-S,Depends on AUD-T1. BR-016 requires immutability.
+Task,AUD-T9 Audit query endpoint with filters and pagination,,Audit Logging,Medium,plata;M2;development;size-M,Depends on AUD-T7.
+Task,AUD-T10 Integration tests proving each BR-016 event is recorded,,Audit Logging,Medium,plata;M2;testing;size-M,Depends on AUD-T9.
+Story,NOT-S1 View my notifications,,Notifications,Medium,plata;M2;development;size-S,Depends on NOT-T7. PRD 11. In-app only in Version 1.
+Story,NOT-S2 Mark a notification as read,,Notifications,Low,plata;M2;development;size-S,Depends on NOT-S1.
+Task,NOT-T1 notifications migration,,Notifications,Medium,plata;M2;development;size-S,BR-013.
+Task,NOT-T2 Notification entity and repository,,Notifications,Medium,plata;M2;development;size-S,Depends on NOT-T1.
+Task,NOT-T3 Domain events published from money operations,,Notifications,Medium,plata;M2;development;architecture;size-M,Depends on TRF-T8. Spring ApplicationEventPublisher in process. ADR-0004 defers Kafka until a second consumer exists.
+Task,NOT-T4 Listeners turning those events into notifications,,Notifications,Medium,plata;M2;development;size-M,Depends on NOT-T3.
+Task,NOT-T5 Cover every event BR-013 lists,,Notifications,Medium,plata;M2;development;size-M,Depends on NOT-T4.
+Task,NOT-T6 A notification failure must never roll back a financial operation,,Notifications,High,plata;M2;development;size-M,"Depends on NOT-T4. BR-013 is explicit, and it is easy to get backwards: a listener inside the transfer transaction can roll the transfer back when it fails."
+Task,NOT-T7 Notification endpoints and DTOs,,Notifications,Medium,plata;M2;development;size-S,Depends on NOT-T5.
+Task,NOT-T8 Integration test that a throwing notification still commits the transfer,,Notifications,High,plata;M2;testing;size-M,Depends on NOT-T6.
+Story,ADM-S1 Administrator lists and searches customers,,Administration,Medium,plata;M2;development;size-M,Depends on ADM-T3. BR-014.
+Story,ADM-S2 Administrator views any wallet,,Administration,Medium,plata;M2;development;size-S,Depends on ADM-T4. BR-014.
+Story,ADM-S3 Administrator freezes a wallet,,Administration,Medium,plata;M2;development;size-M,Depends on ADM-T5. BR-015.
+Story,ADM-S4 Administrator unfreezes a wallet,,Administration,Medium,plata;M2;development;size-S,Depends on ADM-T5. BR-015.
+Story,ADM-S5 Administrator suspends a customer,,Administration,Medium,plata;M2;development;size-M,Depends on ADM-T6. BR-014 and BR-002.
+Story,ADM-S6 Administrator reactivates a customer,,Administration,Medium,plata;M2;development;size-S,Depends on ADM-T6. BR-014.
+Story,ADM-S7 Administrator views transfers deposits and withdrawals,,Administration,Medium,plata;M2;development;size-M,Depends on ADM-T7. BR-014.
+Task,ADM-T1 Administration module and routing under /admin,,Administration,Medium,plata;M2;development;size-S,Depends on AUTH-T11.
+Task,ADM-T2 ADMIN role required on every administration endpoint,,Administration,Highest,plata;M2;security;size-M,Depends on ADM-T1.
+Task,ADM-T3 Customer search query with pagination,,Administration,Medium,plata;M2;development;size-M,Depends on ADM-T2.
+Task,ADM-T4 Administrative wallet view bypassing ownership rules,,Administration,Medium,plata;M2;development;size-M,Depends on WAL-T7. BR-003 permits this for administrators only.
+Task,ADM-T5 Freeze and unfreeze service,,Administration,Medium,plata;M2;development;size-M,Depends on WLC-T2. BR-015.
+Task,ADM-T6 Suspend and reactivate revoking refresh tokens on suspend,,Administration,Medium,plata;M2;security;size-M,Depends on AUTH-T10. A suspended customer with a live session is not suspended.
+Task,ADM-T7 Administrative transaction views,,Administration,Medium,plata;M2;development;size-M,Depends on HIS-T1.
+Task,ADM-T8 Every administrative action writes an audit record,,Administration,Medium,plata;M2;security;size-M,Depends on AUD-T7. BR-014.
+Task,ADM-T9 Authorization test that a CUSTOMER token gets 403 on every endpoint,,Administration,Highest,plata;M2;testing;security;size-M,"Depends on ADM-T2. An admin API a normal customer can reach is worse than no admin API. One test per endpoint, no exceptions."
+Task,ADM-T10 Integration tests for each administrative operation,,Administration,Medium,plata;M2;testing;size-L,Depends on ADM-T8.
+Task,SEC-T1 Rate limit the login and register endpoints,,Security Hardening,High,plata;M3;security;size-M,"Depends on AUTH-T1. PRD 12 files this under future; for anything reachable from the internet it is not. Without it the login endpoint is an unlimited password guessing service."
+Task,SEC-T2 Security response headers,,Security Hardening,Medium,plata;M3;security;size-S,Depends on AUTH-T1.
+Task,SEC-T3 CORS policy,,Security Hardening,Medium,plata;M3;security;size-S,Depends on AUTH-T1.
+Task,SEC-T4 Move the JWT secret into real secret configuration,,Security Hardening,High,plata;M3;security;devops;size-S,".env is fine locally and is git-ignored. Anywhere real it belongs in the platform secret store: a leaked signing key lets anyone mint a token for any customer."
+Task,SEC-T5 Dependency vulnerability scanning in CI,,Security Hardening,Medium,plata;M3;security;devops;size-S,Depends on FND-T2.
+Task,SEC-T6 Request body size limits,,Security Hardening,Low,plata;M3;security;size-S,
+Task,SEC-T7 Confirm no secret token or hash reaches the logs,,Security Hardening,High,plata;M3;security;testing;size-S,Depends on FND-T8.
+Task,SEC-T8 Security focused integration tests,,Security Hardening,Medium,plata;M3;testing;security;size-M,Depends on SEC-T1.
+Story,OPS-S1 Operator checks whether the service is healthy and ready,,Observability API and Delivery,Medium,plata;M3;observability;size-S,Depends on OPS-T1.
+Task,OPS-T1 Actuator health and readiness probes,,Observability API and Delivery,Medium,plata;M3;observability;size-S,Already partly configured in application.yml.
+Task,OPS-T2 Micrometer metrics and a Prometheus endpoint,,Observability API and Delivery,Medium,plata;M3;observability;size-M,Depends on OPS-T1.
+Task,OPS-T3 Business metrics for transfer volume failure rate and latency,,Observability API and Delivery,Medium,plata;M3;observability;size-M,Depends on OPS-T2.
+Task,OPS-T4 OpenTelemetry tracing,,Observability API and Delivery,Low,plata;M3;observability;size-M,"Depends on OPS-T2. Genuinely optional while this is a single process: do it to learn tracing, skip it to ship."
+Task,OPS-T5 OpenAPI specification via springdoc,,Observability API and Delivery,Medium,plata;M3;development;size-S,
+Task,OPS-T6 Version the API under /api/v1,,Observability API and Delivery,High,plata;M3;architecture;size-S,Cheap now and expensive later. Do it before anything else consumes the API.
+Task,OPS-T7 Populate docs/api,,Observability API and Delivery,Low,plata;M3;development;size-S,Depends on OPS-T5. README currently promises this directory.
+Task,OPS-T8 Multi-stage Dockerfile,,Observability API and Delivery,Medium,plata;M3;devops;size-M,The Dockerfile is currently an empty file.
+Task,OPS-T9 Full stack Docker Compose with application and database,,Observability API and Delivery,Medium,plata;M3;devops;size-S,Depends on OPS-T8.
+Task,OPS-T10 Deploy to one real environment,,Observability API and Delivery,Medium,plata;M3;devops;size-L,Depends on OPS-T9. A project that has never been deployed has never been finished.
+Task,OPS-T11 Database backup and restore runbook,,Observability API and Delivery,Medium,plata;M3;devops;size-M,Depends on OPS-T10. An untested restore is not a backup.

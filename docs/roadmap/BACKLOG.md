@@ -45,7 +45,7 @@ No stories — none of this is visible to a user. All of it makes everything aft
 |---|---|---|---|---|
 | FND-T1 | Task | Git repository and initial commit | S | Done |
 | FND-T2 | Task | CI pipeline running `mvn verify` on push and pull request | S | Done |
-| FND-T3 | Task | Architecture document and ADR-0003 package structure | M | Done |
+| FND-T3 | Task | Architecture document and ADR-0004 package structure | M | Done |
 | FND-T4 | Task | Logback JSON encoder configuration | S | — |
 | FND-T5 | Task | Correlation ID filter: accept `X-Correlation-Id` or generate one | M | FND-T4 |
 | FND-T6 | Task | Put the correlation ID in the MDC and in every log line | S | FND-T5 |
@@ -406,7 +406,7 @@ The reason the project exists.
 | NOT-T7 | Notification endpoints and DTOs | S | NOT-T5 |
 | NOT-T8 | Integration test: notification throws, transfer still commits | M | NOT-T6 |
 
-**NOT-T3.** Spring's `ApplicationEventPublisher`, in process. ADR-0003 defers Kafka until a second consumer actually exists.
+**NOT-T3.** Spring's `ApplicationEventPublisher`, in process. ADR-0004 defers Kafka until a second consumer actually exists.
 
 **NOT-T6.** BR-013 is explicit about this, and it is easy to get backwards: an event listener inside the transfer transaction can roll the transfer back when it fails.
 
@@ -529,10 +529,12 @@ If one becomes necessary, it gets an ADR first, then tickets.
 
 ---
 
-# Open items in the documentation
+# Documentation consistency
 
-Two inconsistencies noticed while writing this backlog:
+Two inconsistencies were found while writing this backlog. Both are now fixed:
 
-1. `BUSINESS_RULES.md` §17 references `docs/adr/0003-wallet-ownership-and-currency-model.md`. That file does not exist, and ADR-0003 is now the package-structure decision. The wallet ownership and currency decisions in BR-003, BR-004 and BR-004a are real and deserve their own ADR — they just need a free number.
-
-2. `PRODUCT_REQUIREMENTS.md` §18 still lists ten open questions. `BUSINESS_RULES.md` answers every one of them. Section 18 should say so, or be removed, before it misleads someone.
+* `BUSINESS_RULES.md` §17 referenced an ADR on wallet ownership and currency that had never
+  been written. It now exists as `ADR-0003`, and the package-structure decision moved to
+  `ADR-0004` so the numbering matches the order the decisions were made.
+* `PRODUCT_REQUIREMENTS.md` §18 listed ten open questions that `BUSINESS_RULES.md` had
+  already answered. It now records the answers and points at the rule governing each.

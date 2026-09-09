@@ -24,7 +24,7 @@ Modules planned across the roadmap:
 * `notification`
 * `administration`
 
-Each module owns its own data and its own rules. See `docs/adr/0003-package-structure.md`
+Each module owns its own data and its own rules. See `docs/adr/0004-package-structure.md`
 for why the packages are laid out the way they are.
 
 ---
@@ -72,7 +72,7 @@ So `TransferService` does not inject `AccountRepository`. It calls `AccountServi
 
 This is what keeps modules separable. Everything else in this document is detail by
 comparison. The rule is currently upheld by hand; an automated check (ArchUnit) is planned
-once there is more than one module to check — see `docs/adr/0003-package-structure.md`.
+once there is more than one module to check — see `docs/adr/0004-package-structure.md`.
 
 ---
 

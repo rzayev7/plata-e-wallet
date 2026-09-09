@@ -228,7 +228,7 @@ Frozen wallets cannot:
 
 Frozen wallets may:
 
-* Receive money (decision pending)
+* Receive money (BR-005: freezing blocks sending and withdrawal only)
 
 ---
 
@@ -323,7 +323,7 @@ The system shall:
 * Sender wallet must exist.
 * Receiver wallet must exist.
 * Sender wallet must be ACTIVE.
-* Receiver wallet must be ACTIVE.
+* Receiver wallet must be ACTIVE or FROZEN (BR-005).
 * Amount must be greater than zero.
 * Sender cannot transfer more than available balance.
 * Transfer must be atomic.
@@ -524,19 +524,24 @@ These features may be introduced in future iterations once the core wallet platf
 
 ---
 
-# 18. Open Questions
+# 18. Resolved Questions
 
-The following decisions remain to be made before implementation:
+This section previously listed ten open questions. All of them were answered during domain
+modelling, before implementation began. They are recorded here so the history of the decision
+is visible, with the rule or record that now governs each one.
 
-* Should a user be allowed to own multiple wallets?
-* Should wallets support multiple currencies?
-* Can frozen wallets receive incoming transfers?
-* Can users rename wallets?
-* Can users delete wallets, or only close them?
-* Should transfers support reference messages?
-* What are the daily transfer limits?
-* Should there be transaction fees in Version 1?
-* Should administrators be able to reverse transfers?
-* How should failed transfers be represented?
+| Question | Answer | Recorded in |
+|---|---|---|
+| May a user own multiple wallets? | Yes. No hard limit in Version 1. | BR-003, ADR-0003 |
+| Do wallets support multiple currencies? | No. Version 1 runs a single platform currency. The per-wallet currency field exists so multi-currency needs no migration later. | BR-004, BR-004a, ADR-0003 |
+| Can a frozen wallet receive incoming transfers? | Yes. Freezing blocks sending and withdrawal only. | BR-005, BR-015, ADR-0003 |
+| Can users rename wallets? | Yes, at any time. The display name is cosmetic. | BR-006a |
+| Can wallets be deleted, or only closed? | Closed only, and closure is permanent. | BR-006, ADR-0003 |
+| Do transfers support reference messages? | Yes, an optional free-text note with no functional effect. | BR-009 |
+| What are the daily transfer limits? | None in Version 1. A configurable safeguard may be added later without a schema change. | BR-009, BR §17 |
+| Are there transaction fees in Version 1? | No. | BR-009 |
+| Can administrators reverse a completed transfer? | No. A correction is a new compensating transfer, never a mutation of the original entries. | BR-010 |
+| How are failed transfers represented? | They are not. Validation completes before any ledger entry is written, so a rejected transfer produces no partial state. | BR-010 |
 
-These questions will be resolved during the domain modeling phase.
+Questions that arise from here on are raised as ADRs in `docs/adr/`, not collected in this
+document.

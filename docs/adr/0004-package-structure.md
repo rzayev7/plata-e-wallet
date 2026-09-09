@@ -1,4 +1,4 @@
-# ADR-0003: Package Structure and Module Boundaries
+# ADR-0004: Package Structure and Module Boundaries
 
 **Status:** Accepted
 

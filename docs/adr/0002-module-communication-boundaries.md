@@ -1,6 +1,6 @@
 # ADR-0002: Module Communication Boundaries
 
-**Status:** Superseded by ADR-0003 (2026-09-09)
+**Status:** Superseded by ADR-0004 (2026-09-09)
 
 **Date:** July 28, 2026
 

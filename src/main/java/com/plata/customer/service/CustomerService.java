@@ -2,11 +2,15 @@ package com.plata.customer.service;
 
 import com.plata.customer.dto.CustomerCreateRequestDto;
 import com.plata.customer.dto.CustomerCreateResponseDto;
+import com.plata.customer.dto.CustomerListResponseDto;
 import com.plata.customer.dto.CustomerLoginRequestDto;
-import com.plata.customer.dto.LoginResponse;
-import com.plata.customer.entity.Customer;
+import com.plata.customer.dto.CustomerLoginResponseDto;
+import com.plata.customer.dto.RefreshTokenRequestDto;
 
 public interface CustomerService {
     CustomerCreateResponseDto createCustomer(CustomerCreateRequestDto request);
-    LoginResponse loginCustomer(CustomerLoginRequestDto request);
+    CustomerLoginResponseDto loginCustomer(CustomerLoginRequestDto request);
+    CustomerLoginResponseDto refresh(RefreshTokenRequestDto request);
+    void logout(RefreshTokenRequestDto request);
+    CustomerListResponseDto listCustomers();
 }

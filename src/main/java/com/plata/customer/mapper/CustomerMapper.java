@@ -14,5 +14,4 @@ public class CustomerMapper {
                 .phoneNumber(entity.getPhoneNumber())
                 .build();
     }
-
 }

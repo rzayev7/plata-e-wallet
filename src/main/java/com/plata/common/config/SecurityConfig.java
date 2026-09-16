@@ -34,7 +34,8 @@ public class SecurityConfig {
                                 "/customers/create",
                                 "/customers/login",
                                 "/customers/refresh",
-                                "/customers/logout"
+                                "/customers/logout",
+                                "/account/create"
                         ).permitAll()
                         .requestMatchers("/", "/*.html", "/css/**", "/ws/**").permitAll()
                         .requestMatchers("/error").permitAll()

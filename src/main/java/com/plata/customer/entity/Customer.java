@@ -4,7 +4,6 @@ import com.plata.customer.enums.CustomerRole;
 import com.plata.customer.enums.CustomerStatus;
 import jakarta.persistence.*;
 import java.time.Instant;
-import java.util.Locale;
 import java.util.UUID;
 import lombok.Getter;
 import org.hibernate.annotations.CreationTimestamp;

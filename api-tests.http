@@ -1,0 +1,49 @@
+### 1. Sign up
+# Returns 409 on every run after the first, because the email is already taken.
+# That is the correct answer, not a broken test — just skip to step 2.
+POST http://localhost:8080/customers/create
+Content-Type: application/json
+
+{
+  "email": "sahib123@example.com",
+  "rawPassword": "Passw0rd!",
+  "firstName": "Sahib",
+  "lastName": "Rzayev",
+  "phoneNumber": "+994500000000"
+}
+
+### 2. Log in -> captures the access token
+POST http://localhost:8080/customers/login
+Content-Type: application/json
+
+{
+  "email": "sahib123@example.com",
+  "password": "Passw0rd!"
+}
+
+> {%
+    client.global.set("accessToken", response.body.accessToken);
+%}
+
+### 3. Open an account -> captures the account id
+POST http://localhost:8080/accounts/create
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "currency": "USD"
+}
+
+> {%
+    client.global.set("accountId", response.body.id);
+%}
+
+### 4. Deposit -> amount is in MINOR units, so 500 means 5.00 AZN
+POST http://localhost:8080/accounts/{{accountId}}/deposit
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "amount": 500
+}
+

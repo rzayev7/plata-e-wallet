@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plata · Wallet</title>
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="topbar">
+    <p class="brand">Plata</p>
+    <div class="spacer"></div>
+    <span class="who" id="who"></span>
+    <button type="button" class="linkish" id="logout">Log out</button>
+</header>
+
+<main class="wrap">
+    <p class="alert error" id="pageError" hidden></p>
+
+    <section class="hero">
+        <p class="label">My wallet</p>
+        <p class="headline" id="heroHeadline">Loading…</p>
+        <div class="meta">
+            <div>Accounts<strong id="heroCount">—</strong></div>
+            <div>Status<strong><span class="pill" id="heroStatus">—</span></strong></div>
+        </div>
+    </section>
+
+    <div class="section-head">
+        <h2>Accounts</h2>
+        <span class="count" id="accountsCount"></span>
+    </div>
+
+    <div class="accounts" id="accounts">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+    </div>
+
+    <p class="empty" id="accountsEmpty" hidden>
+        <span>No accounts yet. Open your first one below.</span>
+    </p>
+
+    <div class="section-head">
+        <h2>Open a new account</h2>
+    </div>
+
+    <section class="panel">
+        <p class="alert error" id="createError" hidden></p>
+        <p class="alert success" id="createSuccess" hidden></p>
+
+        <form id="createForm">
+            <div class="field">
+                <label for="currency">Currency</label>
+                <select id="currency" name="currency">
+                    <option value="AZN">AZN — Azerbaijani manat</option>
+                    <option value="USD">USD — US dollar</option>
+                    <option value="EUR">EUR — Euro</option>
+                </select>
+            </div>
+            <button type="submit" id="createButton">Open account</button>
+        </form>
+    </section>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

@@ -29,15 +29,13 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/customers").authenticated()
                         .requestMatchers(
                                 "/customers/create",
                                 "/customers/login",
                                 "/customers/refresh",
-                                "/customers/logout",
-                                "/account/create"
+                                "/customers/logout"
                         ).permitAll()
-                        .requestMatchers("/", "/*.html", "/css/**", "/ws/**").permitAll()
+                        .requestMatchers("/", "/*.html", "/css/**", "/js/**", "/ws/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )

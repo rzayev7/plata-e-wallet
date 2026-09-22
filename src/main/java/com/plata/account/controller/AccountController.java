@@ -1,23 +1,37 @@
 package com.plata.account.controller;
 
 import com.plata.account.dto.CreateAccountRequestDto;
-import com.plata.account.entity.Account;
+import com.plata.account.dto.AccountResponseDto;
+import com.plata.account.dto.DepositMoneyRequestDto;
+import com.plata.account.dto.DepositMoneyResponseDto;
 import com.plata.account.service.AccountService;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
-@RequestMapping("/account")
+@RequestMapping("/accounts")
 @AllArgsConstructor
 public class AccountController {
 
     private final AccountService accountService;
 
     @PostMapping("/create")
-    public Account createAccount(@RequestBody CreateAccountRequestDto accountDto) {
-        return accountService.createAccount(accountDto);
+    public AccountResponseDto createAccount(@AuthenticationPrincipal UUID customerId, @RequestBody CreateAccountRequestDto accountDto) {
+        return accountService.createAccount(customerId, accountDto);
     }
+
+    @GetMapping
+    public List<AccountResponseDto> listAccounts(@AuthenticationPrincipal UUID customerId) {
+        return accountService.listAccounts(customerId);
+    }
+
+    @PostMapping("/{accountId}/deposit")
+    public DepositMoneyResponseDto depositMoney(@PathVariable UUID accountId,@RequestBody DepositMoneyRequestDto depositMoneyRequestDto){
+        return accountService.depositMoney(accountId,depositMoneyRequestDto);
+    }
+
 }

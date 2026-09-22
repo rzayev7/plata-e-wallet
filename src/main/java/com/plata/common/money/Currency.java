@@ -1,7 +1,7 @@
-package com.plata.account.enums;
+package com.plata.common.money;
 
 public enum Currency {
     AZN,
     USD,
-    EUR,
+    EUR
 }

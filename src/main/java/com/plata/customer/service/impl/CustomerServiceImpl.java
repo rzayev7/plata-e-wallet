@@ -19,8 +19,6 @@ import com.plata.customer.mapper.CustomerMapper;
 import com.plata.customer.repository.CustomerRepository;
 import com.plata.customer.service.CustomerService;
 import com.plata.customer.service.RefreshTokenService;
-import com.plata.wallet.entity.Wallet;
-import com.plata.wallet.service.WalletService;
 import java.util.List;
 import java.util.Locale;
 import lombok.AllArgsConstructor;
@@ -35,7 +33,6 @@ public class CustomerServiceImpl implements CustomerService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
-    private final WalletService walletService;
     @Override
     @Transactional
     public CustomerCreateResponseDto createCustomer(CustomerCreateRequestDto request) {
@@ -50,8 +47,6 @@ public class CustomerServiceImpl implements CustomerService {
                 request.getRawPassword()));
 
         customerRepository.save(customer);
-
-        walletService.createWallet(customer);
 
         return CustomerMapper.toDto(customer);
     }

@@ -119,3 +119,32 @@ button:hover {
         gap: 0;
     }
 }
+
+button:disabled {
+    background: #a5b4fc;
+    cursor: not-allowed;
+}
+
+.alert {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.alert.error {
+    color: #991b1b;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+.alert.success {
+    color: #065f46;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+}
+
+.alert[hidden] {
+    display: none;
+}

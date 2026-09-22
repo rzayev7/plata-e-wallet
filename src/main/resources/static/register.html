@@ -11,7 +11,9 @@
     <p class="brand">Plata</p>
     <h1>Create account</h1>
 
-    <form>
+    <p class="alert error" id="error" hidden></p>
+
+    <form id="form">
         <div class="row">
             <div class="field">
                 <label for="firstName">First name</label>
@@ -38,10 +40,13 @@
             <input type="password" id="rawPassword" name="rawPassword" autocomplete="new-password" minlength="8" required>
         </div>
 
-        <button type="submit">Sign up</button>
+        <button type="submit" id="submit">Sign up</button>
     </form>
 
     <p class="switch">Already have an account? <a href="login.html">Log in</a></p>
 </main>
+
+<script src="js/api.js"></script>
+<script src="js/register.js"></script>
 </body>
 </html>

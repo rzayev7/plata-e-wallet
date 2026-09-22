@@ -44,9 +44,4 @@ public class CustomerController {
     public void logout(@Valid @RequestBody RefreshTokenRequestDto dto) {
         customerService.logout(dto);
     }
-
-    @GetMapping
-    public CustomerListResponseDto getCustomers(){
-        return customerService.listCustomers();
-    }
 }

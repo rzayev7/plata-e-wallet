@@ -5,6 +5,7 @@ import com.plata.account.dto.AccountResponseDto;
 import com.plata.account.dto.DepositMoneyRequestDto;
 import com.plata.account.dto.DepositMoneyResponseDto;
 import com.plata.account.service.AccountService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class AccountController {
     private final AccountService accountService;
 
     @PostMapping("/create")
-    public AccountResponseDto createAccount(@AuthenticationPrincipal UUID customerId, @RequestBody CreateAccountRequestDto accountDto) {
+    public AccountResponseDto createAccount(@AuthenticationPrincipal UUID customerId, @RequestBody @Valid CreateAccountRequestDto accountDto) {
         return accountService.createAccount(customerId, accountDto);
     }
 
@@ -30,8 +31,8 @@ public class AccountController {
     }
 
     @PostMapping("/{accountId}/deposit")
-    public DepositMoneyResponseDto depositMoney(@PathVariable UUID accountId,@RequestBody DepositMoneyRequestDto depositMoneyRequestDto){
-        return accountService.depositMoney(accountId,depositMoneyRequestDto);
+    public DepositMoneyResponseDto depositMoney(@AuthenticationPrincipal UUID customerId, @PathVariable UUID accountId,@RequestBody @Valid DepositMoneyRequestDto depositMoneyRequestDto){
+        return accountService.depositMoney(customerId, accountId,depositMoneyRequestDto);
     }
 
 }

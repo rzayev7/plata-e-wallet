@@ -1,4 +1,4 @@
-package com.plata.customer.exceptions;
+package com.plata.customer.exception;
 
 public class InvalidRefreshTokenException extends RuntimeException {
     public InvalidRefreshTokenException() {

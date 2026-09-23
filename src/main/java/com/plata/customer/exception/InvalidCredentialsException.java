@@ -1,4 +1,4 @@
-package com.plata.customer.exceptions;
+package com.plata.customer.exception;
 
 public class InvalidCredentialsException extends RuntimeException {
     public InvalidCredentialsException(String message) {

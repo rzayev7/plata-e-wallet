@@ -1,4 +1,4 @@
-package com.plata.customer.exceptions;
+package com.plata.customer.exception;
 
 public class EmailAlreadyExistsException extends RuntimeException {
     public EmailAlreadyExistsException(String email) {

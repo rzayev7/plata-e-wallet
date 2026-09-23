@@ -1,4 +1,4 @@
-package com.plata.customer.dto;
+package com.plata.common.exception;
 
 import java.time.Instant;
 

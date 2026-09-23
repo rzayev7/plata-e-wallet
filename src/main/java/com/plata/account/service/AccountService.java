@@ -11,5 +11,5 @@ import java.util.UUID;
 public interface AccountService {
     AccountResponseDto createAccount(UUID customerId, CreateAccountRequestDto accountDto);
     List<AccountResponseDto> listAccounts(UUID customerId);
-    DepositMoneyResponseDto depositMoney(UUID accountId , DepositMoneyRequestDto request);
+    DepositMoneyResponseDto depositMoney(UUID customerId, UUID accountId , DepositMoneyRequestDto request);
 }

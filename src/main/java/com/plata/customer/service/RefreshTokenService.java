@@ -1,7 +1,7 @@
 package com.plata.customer.service;
 
 import com.plata.customer.entity.RefreshToken;
-import com.plata.customer.exceptions.InvalidRefreshTokenException;
+import com.plata.customer.exception.InvalidRefreshTokenException;
 import com.plata.customer.repository.RefreshTokenRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

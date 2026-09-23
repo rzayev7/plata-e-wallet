@@ -5,6 +5,7 @@ import com.plata.account.dto.CreateAccountRequestDto;
 import com.plata.account.dto.DepositMoneyRequestDto;
 import com.plata.account.dto.DepositMoneyResponseDto;
 import com.plata.account.entity.Account;
+import com.plata.account.exception.AccountNotFoundException;
 import com.plata.account.repository.AccountRepository;
 import com.plata.account.service.AccountService;
 import com.plata.common.money.Money;
@@ -12,9 +13,9 @@ import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import javax.security.auth.login.AccountNotFoundException;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -37,8 +38,12 @@ public class AccountServiceImpl implements AccountService {
 
     @Transactional
     @Override
-    public DepositMoneyResponseDto depositMoney(UUID accountId, DepositMoneyRequestDto request){
-        Account account = accountRepository.findById(accountId).orElseThrow();
+    public DepositMoneyResponseDto depositMoney(UUID customerId, UUID accountId, DepositMoneyRequestDto request){
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
+        if (!Objects.equals(account.getOwnerId(), customerId)) {
+            throw new AccountNotFoundException(accountId);
+        }
         account.deposit(request.amount());
         accountRepository.save(account);
         return new DepositMoneyResponseDto(accountId,account.getBalance(),account.getCurrency());

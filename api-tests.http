@@ -5,7 +5,7 @@ POST http://localhost:8080/customers/create
 Content-Type: application/json
 
 {
-  "email": "sahib123@example.com",
+  "email": "sahib111@example.com",
   "rawPassword": "Passw0rd!",
   "firstName": "Sahib",
   "lastName": "Rzayev",
@@ -31,7 +31,7 @@ Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
 {
-  "currency": "USD"
+  "currency": "AZN"
 }
 
 > {%
@@ -47,3 +47,6 @@ Authorization: Bearer {{accessToken}}
   "amount": 500
 }
 
+### 5. List all accounts
+GET http://localhost:8080/accounts
+Authorization: Bearer {{accessToken}}

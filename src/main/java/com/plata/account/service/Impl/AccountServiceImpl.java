@@ -1,9 +1,6 @@
 package com.plata.account.service.Impl;
 
-import com.plata.account.dto.AccountResponseDto;
-import com.plata.account.dto.CreateAccountRequestDto;
-import com.plata.account.dto.DepositMoneyRequestDto;
-import com.plata.account.dto.DepositMoneyResponseDto;
+import com.plata.account.dto.*;
 import com.plata.account.entity.Account;
 import com.plata.account.exception.AccountNotFoundException;
 import com.plata.account.repository.AccountRepository;
@@ -48,6 +45,37 @@ public class AccountServiceImpl implements AccountService {
         accountRepository.save(account);
         return new DepositMoneyResponseDto(accountId,account.getBalance(),account.getCurrency());
     }
+
+    public WithdrawMoneyResponseDto withdrawMoney(UUID customerId, UUID accountId, WithdrawMoneyRequestDto requestDto){
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
+        if(!Objects.equals(account.getOwnerId(),customerId)) {
+            throw new AccountNotFoundException(accountId);
+        }
+        account.withdraw(requestDto.amount());
+        accountRepository.save(account);
+        return new WithdrawMoneyResponseDto(accountId,account.getBalance(),account.getCurrency());
+    }
+
+    public TransferMoneyResponseDto transferMoney(UUID customerId, UUID sourceAccountId, TransferMoneyRequestDto requestDto){
+        Account account1 = accountRepository.findById(sourceAccountId)
+                .orElseThrow(() -> new AccountNotFoundException(sourceAccountId));
+
+        Account account2 = accountRepository.findById(requestDto.destinationAccountId())
+                .orElseThrow(() -> new AccountNotFoundException(requestDto.destinationAccountId()));
+
+        if(!Objects.equals(account1.getOwnerId(),customerId)) {
+            throw new AccountNotFoundException(sourceAccountId);
+        }
+
+        account1.withdraw(requestDto.amount());
+        account2.deposit(requestDto.amount());
+        accountRepository.save(account1);
+        accountRepository.save(account2);
+        TransferMoneyResponseDto transferMoneyResponseDto = new TransferMoneyResponseDto("Transfer completed successfully");
+        return transferMoneyResponseDto;
+    }
+
 
     private static final int MINOR_UNITS = 2;
 

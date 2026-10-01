@@ -1,6 +1,8 @@
 package com.plata.common.exception;
 
+import com.plata.account.exception.AccountCannotReceiveException;
 import com.plata.account.exception.AccountNotFoundException;
+import com.plata.account.exception.InsufficientFundsException;
 import com.plata.customer.exception.CustomerNotActiveException;
 import com.plata.customer.exception.EmailAlreadyExistsException;
 import com.plata.customer.exception.InvalidCredentialsException;
@@ -87,6 +89,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler  {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(body);
+    }
+
+    @ExceptionHandler(AccountCannotReceiveException.class)
+    public ResponseEntity<ErrorResponse> handleAccountCannotReceive(AccountCannotReceiveException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(errorResponse(HttpStatus.CONFLICT, ex.getMessage()));
+    }
+
+    @ExceptionHandler(InsufficientFundsException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientFunds(InsufficientFundsException ex){
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(errorResponse(HttpStatus.CONFLICT,ex.getMessage()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

@@ -3,15 +3,11 @@ package com.plata.account.entity;
 import com.plata.account.dto.CreateAccountRequestDto;
 import com.plata.account.enums.AccountStatus;
 import com.plata.account.enums.AccountType;
+import com.plata.account.exception.AccountCannotReceiveException;
+import com.plata.account.exception.InsufficientFundsException;
 import com.plata.common.money.Currency;
 import com.plata.common.money.Money;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -45,6 +41,9 @@ public  class Account{
     @Column(nullable = false)
     private AccountStatus status;
 
+    @Version
+    private Long version;
+
     public static Account createAccount(CreateAccountRequestDto dto, UUID ownerId){
         Account account = new Account();
         account.setOwnerId(ownerId);
@@ -61,6 +60,26 @@ public  class Account{
         if (amount <= 0) {
             throw new IllegalArgumentException("Credit amount must be greater than zero");
         }
+        if (!this.status.canReceive()) {
+            throw new AccountCannotReceiveException(this.id, this.status);
+        }
         this.balance += amount;
     }
+
+    public void withdraw(Long amount){
+        if (amount == null) {
+            throw new IllegalArgumentException("Amount cannot be null");
+        }
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Credit amount must be greater than zero");
+        }
+        if(!this.status.canSend()){
+            throw new AccountCannotReceiveException(this.id, this.status);
+        }
+        if(this.balance < amount){
+            throw new InsufficientFundsException(this.id,this.balance,amount);
+        }
+        this.balance -= amount;
+    }
+
 }

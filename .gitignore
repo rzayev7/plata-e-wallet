@@ -32,8 +32,11 @@ build/
 ### VS Code ###
 .vscode/
 
+### Claude Code ###
+.claude/
+
 ### Env ###
-src/main/resources/application-local.yml
+**/src/main/resources/application-local.yml
 .env
 .env.*
 !.env.example
